@@ -23,21 +23,21 @@
     <div class="rule"></div>
     <p class="blurb">A field guide to <strong>serial-console-mcp</strong> — how an agent opens a
     craft port, a CAT radio, a rotator or a microcontroller over a serial cable, picks the right
-    preset, says the right line ending, reads until the prompt instead of guessing, keys a line
-    when asked, and hands the port back cleanly. Everything a terminal program knows, explained
+    preset, says the right line ending, reads until the prompt instead of guessing, sees a
+    VT100 screen the way you would, keys a line when asked, and hands the port back cleanly. Everything a terminal program knows, explained
     for the operator who would rather ask.</p>
   </div>
   <div class="statband">
-    <div class="tagline">FIELD GUIDE&nbsp;&nbsp;·&nbsp;&nbsp;VERSION 0.2&nbsp;&nbsp;·&nbsp;&nbsp;SEPTEMBER 2026</div>
+    <div class="tagline">FIELD GUIDE&nbsp;&nbsp;·&nbsp;&nbsp;VERSION 0.3&nbsp;&nbsp;·&nbsp;&nbsp;SEPTEMBER 2026</div>
     <div class="stats">
-      <div class="stat"><div class="n">28</div><div class="l">Tools</div></div>
-      <div class="stat"><div class="n">10</div><div class="l">Device<br>presets</div></div>
+      <div class="stat"><div class="n">30</div><div class="l">Tools</div></div>
+      <div class="stat"><div class="n">12</div><div class="l">Device<br>presets</div></div>
       <div class="stat"><div class="n">6</div><div class="l">Console<br>rules</div></div>
       <div class="stat"><div class="n">5</div><div class="l">Worked<br>sessions</div></div>
     </div>
     <div class="coverfoot">
       <span>© 2026 STEFAN BRUNNER · AE5VG</span>
-      <span>EXPERIMENTAL RELEASE 0.2.0 · MIT LICENSE</span>
+      <span>EXPERIMENTAL RELEASE 0.3.0 · MIT LICENSE</span>
     </div>
   </div>
 </div>
@@ -59,6 +59,7 @@
   <div class="toc-row"><span class="tno">02</span><span class="tt"><a href="#standard">The console standard</a></span><span class="leader"></span><span class="tp"><a href="#standard"></a></span></div>
   <div class="toc-row"><span class="tno">03</span><span class="tt"><a href="#devices">The device playbook</a></span><span class="leader"></span><span class="tp"><a href="#devices"></a></span></div>
   <div class="toc-row"><span class="tno">04</span><span class="tt"><a href="#shack">The shack — several ports, control lines, scripts, capture</a></span><span class="leader"></span><span class="tp"><a href="#shack"></a></span></div>
+  <div class="toc-row"><span class="tno">05</span><span class="tt"><a href="#terminals">Terminals — clean text, keys, and a real screen</a></span><span class="leader"></span><span class="tp"><a href="#terminals"></a></span></div>
 
   <div class="toc-group">At the bench</div>
   <div class="toc-row"><span class="tno">E</span><span class="tt"><a href="#examples">Worked sessions</a></span><span class="leader"></span><span class="tp"><a href="#examples"></a></span></div>
@@ -74,7 +75,7 @@
   <div class="eyebrow">Chapter A · Before you start</div>
   <h2>The Tools at a Glance</h2>
   <div class="h2rule"></div>
-  <p class="lead">One server, twenty-eight tools, as many open ports as the shack has cables.
+  <p class="lead">One server, thirty tools, as many open ports as the shack has cables.
   The agent picks the tool; you say what you want in plain language.</p>
   <table class="glance">
     <tr><th style="width:30%">Tools</th><th style="width:40%">What they do</th><th>When the agent reaches for them</th></tr>
@@ -83,6 +84,7 @@
     <tr><td class="strong mono">send_text · send_hex</td><td>Write an ASCII line or raw bytes. Writes only; never reads.</td><td class="get">Any command, login, bare return, CI-V frame</td></tr>
     <tr><td class="strong mono">read_until_prompt · read_available · query_text</td><td>Return buffered output up to a prompt (leaving the rest), or whatever has arrived, or clear-send-read in one.</td><td class="get">Every reply</td></tr>
     <tr><td class="strong mono">expect</td><td>A scripted list of send-and-wait steps in one call, with automatic replies to pagers.</td><td class="get">Logins, multi-step command sequences</td></tr>
+    <tr><td class="strong mono">send_keys · screen</td><td>Press Ctrl-C, Esc, Tab, arrows and F-keys by name; view the VT100/xterm screen of a full-screen console.</td><td class="get">&ldquo;Interrupt that ping&rdquo; · BIOS, BMC and menu consoles</td></tr>
     <tr><td class="strong mono">set_lines · pulse_line · send_break</td><td>Drive DTR and RTS, send BREAK; status shows CTS/DSR/CD/RI.</td><td class="get">Key a rig's PTT, reset an Arduino, interrupt a boot</td></tr>
     <tr><td class="strong mono">capture_start · capture_stop · get_transcript</td><td>Log a session to a file, raw or timestamped; re-read the rolling transcript.</td><td class="get">&ldquo;Record this console session&rdquo;</td></tr>
     <tr><td class="strong mono">port_in_use_by · detect_baud</td><td>Which program holds a port; which baud rate produces readable text.</td><td class="get">&ldquo;It says in use&rdquo; · &ldquo;I don't know the rate&rdquo;</td></tr>
@@ -277,8 +279,11 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <span class="mono">cisco-console</span>, <span class="mono">juniper-craft</span>,
   <span class="mono">linux-console</span>, <span class="mono">kenwood-cat</span>,
   <span class="mono">elecraft-cat</span>, <span class="mono">yaesu-cat</span>,
-  <span class="mono">icom-civ</span>, <span class="mono">yaesu-rotator</span>,
-  <span class="mono">arduino</span>, <span class="mono">nmea-gps</span>. Ask
+  <span class="mono">icom-civ</span>, <span class="mono">xiegu-civ</span>,
+  <span class="mono">yaesu-rotator</span>, <span class="mono">arduino</span>,
+  <span class="mono">nmea-gps</span>, <span class="mono">screen-console</span>. Presets also choose
+  the <b>terminal mode</b> (chapter 05): the console presets strip colours and escape sequences,
+  the radio presets pass raw bytes. Ask
   <i>&ldquo;list the presets&rdquo;</i> to see each one's values and caveats. They are factory
   defaults; the device's menu wins.</p>
   <p>Don't know the rate at all? <i>&ldquo;What baud is this thing?&rdquo;</i> runs
@@ -374,7 +379,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
         <td>Commands end in <span class="mono">;</span> with no CR: <span class="mono">ID;</span> <span class="mono">FA;</span> <span class="mono">MD;</span>. Replies are one line ending in <span class="mono">;</span>. <span class="mono">cat_build</span> formats a frequency set, <span class="mono">cat_parse</span> names the rig, mode and frequency. Elecraft echoes nothing; Kenwood may need <span class="mono">AI0;</span> to stop auto-info.</td></tr>
     <tr><td class="strong">Icom CI-V<br><span class="mono">IC-7300 · 7610 · 705 · 9700</span></td>
         <td class="mono">19200 8N1 (USB)<br>9600 via CI-V jack</td><td class="mono">n/a (binary)</td><td class="mono">send_hex →<br>read_available</td>
-        <td>Frames are <span class="mono">FE FE &lt;rig&gt; E0 &lt;cmd&gt; … FD</span>; the reply shows as hex. Frequency is BCD, low byte first. Never enable XON/XOFF. If the rig echoes, the first frame back is your own.</td></tr>
+        <td>Frames are <span class="mono">FE FE &lt;rig&gt; E0 &lt;cmd&gt; … FD</span>; the reply shows as hex. Frequency is BCD, low byte first. Never enable XON/XOFF. If the rig echoes, the first frame back is your own. Xiegu G90/X6100 speak CI-V too (address 0x70, <span class="mono">xiegu-civ</span> preset). Baofeng-class handhelds have no CAT: their cable carries a memory-programming protocol, which is CHIRP's job, not a console.</td></tr>
     <tr><td class="strong">Rotators, switches, MCUs<br><span class="mono">Yaesu GS-232 · Green Heron · Arduino · ESP32</span></td>
         <td class="mono">9600 or 115200 8N1</td><td class="mono">CR (rotators)<br>LF (Arduino)</td><td class="mono">read_available or<br>read_until_prompt</td>
         <td>GS-232 <span class="mono">C</span> returns <span class="mono">+0xxx</span> azimuth; <span class="mono">rotator_build</span> and <span class="mono">rotator_parse</span> cover read, move, stop and speed. Opening a port resets many Arduinos via DTR; wait a second and expect a boot banner. Sketches that print continuously are a <span class="mono">read_available</span> job.</td></tr>
@@ -453,6 +458,65 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   the tool on a production console. <code>SERIAL_CONSOLE_IDLE_MINUTES=15</code> closes a port
   nobody has used for that long, so a forgotten connection stops blocking WSJT-X. Both are off
   by default.</p>
+</div>
+
+<!-- ============ 05 · TERMINALS ============ -->
+<div class="chapter" id="terminals">
+  <div class="eyebrow">Chapter 05 · Terminals</div>
+  <h2>Clean Text, Keys, and a Real Screen</h2>
+  <div class="h2rule"></div>
+  <p class="lead">A terminal program offers a menu of emulations: VT100, VT220, Xterm, ANSI,
+  Linux, Wyse, TN3270. An agent needs three things from that list, and this chapter is those
+  three. Everything else on the menu is either the same family under another name or a
+  1980s terminal nobody has plugged in for twenty years.</p>
+
+  <h3>Three terminal modes</h3>
+  <table>
+    <tr><th style="width:14%">Mode</th><th style="width:40%">What the agent sees</th><th>Use it for</th></tr>
+    <tr><td class="strong mono">dumb</td><td>The bytes exactly as received. The default.</td><td>CAT, CI-V, rotators, GPS, Arduino, and most CLIs</td></tr>
+    <tr><td class="strong mono">ansi</td><td>Colour and escape sequences stripped as they arrive; a bare carriage return overwrites the line, backspace moves left, erase-line and cursor moves are honoured. A progress bar reads as its final state, a coloured prompt as plain text, and <span class="mono">read_until_prompt</span> matches through the colour codes.</td><td>Linux shells, coloured router prompts, anything that prints <span class="mono">ESC[32m</span> noise. The console presets set it.</td></tr>
+    <tr><td class="strong mono">xterm · vt100</td><td>All of the above plus a real character grid, 80×24 unless you say otherwise, updated continuously. The <span class="mono">screen</span> tool returns the grid as rows of text with the cursor position, and the terminal answers &ldquo;who are you&rdquo; queries as a VT100 so full-screen programs behave.</td><td>BIOS setup over a serial console, RAID and BMC consoles, menu-driven switches (older ProCurve, Netgear), <span class="mono">vi</span>, <span class="mono">top</span>. The <span class="mono">screen-console</span> preset.</td></tr>
+  </table>
+  <p>Choose the mode on <span class="mono">connect(terminal=…)</span> or let the preset. The raw
+  bytes are always kept in the capture file and in the screen model; only what the read tools
+  return is cleaned. The screen model needs the <span class="mono">[screen]</span> extra
+  (<span class="mono">pip install 'serial-console-mcp[screen]'</span>); the installers include
+  it. Without it, <span class="mono">xterm</span> quietly runs as <span class="mono">ansi</span>
+  and says so.</p>
+
+  <h3>Keys by name</h3>
+  <p><span class="mono">send_text</span> types a line. <span class="mono">send_keys</span> presses
+  keys: <i>&ldquo;hit Ctrl-C, that ping is still running&rdquo;</i>, <i>&ldquo;press Tab to
+  complete it&rdquo;</i>, <i>&ldquo;arrow down twice and Enter&rdquo;</i>. Names are the obvious
+  ones: <span class="mono">ctrl-c</span> through <span class="mono">ctrl-z</span>,
+  <span class="mono">esc</span>, <span class="mono">tab</span>, <span class="mono">enter</span>,
+  <span class="mono">backspace</span>, <span class="mono">delete</span>, <span class="mono">up</span>
+  <span class="mono">down</span> <span class="mono">left</span> <span class="mono">right</span>,
+  <span class="mono">home</span> <span class="mono">end</span> <span class="mono">pgup</span>
+  <span class="mono">pgdn</span>, <span class="mono">f1</span>–<span class="mono">f12</span>, a single
+  character, or <span class="mono">text:…</span> for a literal run. They are encoded the way an
+  xterm sends them, which is what every current device expects. Nothing is read; look at the
+  reply with <span class="mono">read_until_prompt</span>, <span class="mono">read_available</span>
+  or <span class="mono">screen</span>.</p>
+  <div class="callout">
+    <div class="ct">The full-screen loop</div>
+    <p>Connect with the <span class="mono">screen-console</span> preset, then alternate: press a
+    key, read the screen, decide, press the next. Read the screen after <b>every</b> keypress; a
+    menu that didn't move is the most common way an agent gets lost in a BIOS. The skill says
+    the same thing to the agent.</p>
+  </div>
+  <div class="callout warn">
+    <div class="ct">What is deliberately not here</div>
+    <p>TN3270 is IBM mainframe over telnet, not serial. SCOANSI, Wyse 50/60 and Televideo are
+    proprietary terminals for old SCO and Unix hosts with no maintained emulator; the rare host
+    that still wants one usually accepts VT100. If you meet such a host, <span class="mono">dumb</span>
+    with a capture file is the honest fallback.</p>
+  </div>
+
+  <h3>Read-only mode and keys</h3>
+  <p>In read-only mode, named keys are allowed (interrupting and navigating never change
+  configuration by themselves) but single characters and <span class="mono">text:</span> runs are
+  refused, since those are typing.</p>
 </div>
 
 <!-- ============ E · EXAMPLES ============ -->
@@ -551,6 +615,9 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong">Garbage characters, <span class="mono">�</span>, box drawing</td><td>Wrong baud rate. Occasionally wrong data bits or parity.</td><td class="mono">&ldquo;Detect the baud rate&rdquo; · &ldquo;reconnect at 115200&rdquo;</td></tr>
     <tr><td class="strong">Echo comes back, no reply</td><td>Wrong line ending for this device, or a CLI that needs a return to wake.</td><td class="mono">&ldquo;Send a return first&rdquo; · &ldquo;use LF instead of CR&rdquo;</td></tr>
     <tr><td class="strong">Prompt not seen, partial output returned</td><td>The prompt string doesn't match: missing trailing space, hostname changed, or <span class="mono">--More--</span> paging.</td><td class="mono">&ldquo;The prompt is admin@r1&gt; with a space&rdquo; · &ldquo;answer --More-- with a space&rdquo;</td></tr>
+    <tr><td class="strong">Output full of <span class="mono">ESC[0m</span>, <span class="mono">[32m</span>, box-drawing junk on a shell</td><td>Colour and cursor escape sequences shown raw: the connection is in <span class="mono">dumb</span> mode.</td><td class="mono">&ldquo;Reconnect with terminal ansi&rdquo; (or a console preset)</td></tr>
+    <tr><td class="strong">A command won't stop; the prompt never returns</td><td>ping, monitor, a pager or a hung process is still running.</td><td class="mono">&ldquo;Press Ctrl-C&rdquo; · &ldquo;press q&rdquo;</td></tr>
+    <tr><td class="strong">Menu screen looks like scrambled fragments</td><td>A full-screen program is repainting with cursor addressing; line tools can't show it.</td><td class="mono">&ldquo;Reconnect as xterm and show me the screen&rdquo;</td></tr>
     <tr><td class="strong">Read-only mode refused to send</td><td><span class="mono">SERIAL_CONSOLE_READ_ONLY</span> is set and the command isn't a read.</td><td class="mono">Unset it in the config entry, or widen SERIAL_CONSOLE_ALLOW</td></tr>
     <tr><td class="strong">Wrong device answered</td><td>Several ports open; the command went to the current one.</td><td class="mono">&ldquo;Send that to the rotator&rdquo; · &ldquo;what's the status?&rdquo;</td></tr>
     <tr><td class="strong">Write failed: Write timeout</td><td>RTS/CTS is on and the cable doesn't carry CTS.</td><td class="mono">&ldquo;Reconnect without hardware flow control&rdquo;</td></tr>
@@ -577,7 +644,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><th style="width:22%">Tool</th><th style="width:48%">Parameters</th><th>Returns</th></tr>
     <tr><td class="strong mono">list_serial_ports</td><td>none</td><td>Ports with description, hardware id, open-here marker</td></tr>
     <tr><td class="strong mono">list_presets</td><td>none</td><td>Each preset's settings and notes</td></tr>
-    <tr><td class="strong mono">connect</td><td class="mono">port · preset · name · baud [9600] · bytesize [8] · parity N|E|O [N] · stopbits [1] · rtscts [off] · xonxoff [off] · line_ending [CR] · prompt · prompt_regex</td><td>Settings echoed back, preset notes, other open ports</td></tr>
+    <tr><td class="strong mono">connect</td><td class="mono">port · preset · name · baud [9600] · bytesize [8] · parity N|E|O [N] · stopbits [1] · rtscts [off] · xonxoff [off] · line_ending [CR] · prompt · prompt_regex · terminal dumb|ansi|vt100|xterm [dumb] · cols [80] · rows [24]</td><td>Settings echoed back, preset notes, other open ports</td></tr>
     <tr><td class="strong mono">reconnect_last</td><td class="mono">name [most recent]</td><td>Same as connect, from the remembered settings</td></tr>
     <tr><td class="strong mono">disconnect</td><td class="mono">connection · all_connections [false]</td><td>Confirmation; always releases the port</td></tr>
     <tr><td class="strong mono">send_text</td><td class="mono">data · line_ending [connection's] · clear_buffer_first [false]</td><td>Byte count sent</td></tr>
@@ -587,6 +654,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong mono">query_text</td><td class="mono">data · line_ending · prompt [connection's; "" = idle] · read_timeout [5 s]</td><td>The reply</td></tr>
     <tr><td class="strong mono">expect</td><td class="mono">steps [{send, send_hex, line_ending, expect, regex, timeout, clear_first}] · auto_reply · stop_on_timeout [true]</td><td>Each step's result</td></tr>
     <tr><td class="strong mono">clear_buffer</td><td>none</td><td>Bytes discarded</td></tr>
+    <tr><td class="strong mono">send_keys</td><td class="mono">keys [ctrl-c, esc, tab, enter, up, f1, "x", text:…]</td><td>Confirmation of what was pressed</td></tr>
+    <tr><td class="strong mono">screen</td><td class="mono">reset [false]</td><td>The xterm/vt100 grid as text, with cursor position</td></tr>
     <tr><td class="strong mono">status</td><td>none</td><td>Every open port: settings, reader, buffer, lines, capture; or what is remembered</td></tr>
     <tr><td class="strong mono">set_lines</td><td class="mono">dtr · rts</td><td>Resulting DTR/RTS</td></tr>
     <tr><td class="strong mono">pulse_line</td><td class="mono">line DTR|RTS · ms [100] · level [true]</td><td>Confirmation, line restored</td></tr>
@@ -610,6 +679,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <li><b>Display decoding</b> is UTF-8 with replacement characters; prompt matching is byte-exact, so binary noise before a prompt does not shift the match.</li>
     <li><b>Write timeout</b> is two seconds; <b>reader poll</b> is a tenth of a second; <b>idle settle</b> for prompt-less reads is 150 ms; the <b>receive buffer</b> holds 4 MB per port and the <b>transcript</b> 256 KB.</li>
     <li><b>Remembered connections</b> live in <span class="mono">last_connection.json</span> under <span class="mono">~/Library/Application Support/serial-console-mcp/</span> (Mac), <span class="mono">%APPDATA%\serial-console-mcp\</span> (Windows), <span class="mono">~/.config/serial-console-mcp/</span> (Linux); auto-named captures go in a <span class="mono">captures</span> folder beside it.</li>
+    <li><b>Terminal modes</b> only change what the read tools return; the capture file and the screen model always get the raw bytes. The escape stripper is chunk-safe: a sequence split across two reads is held until complete.</li>
     <li><b>The operating skill</b> in <span class="mono">skills/serial-console/SKILL.md</span> carries this guide's rules for the agent.</li>
   </ul>
 </div>
@@ -619,11 +689,11 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <div class="eyebrow">Chapter H · Reference</div>
   <h2>About &amp; Provenance</h2>
   <div class="h2rule"></div>
-  <p class="lead">This is an experimental 0.2.0. The guide says what the server does and what
+  <p class="lead">This is an experimental 0.3.0. The guide says what the server does and what
   has been verified; it does not claim more.</p>
   <p>serial-console-mcp began as a generic console tool for network craft ports and radio gear
   and was rewritten for this release around the background-reader model in chapter D. The
-  0.2.0 code is verified by a 54-case test suite driving a simulated serial port, by a live
+  0.3.0 code is verified by a 73-case test suite driving a simulated serial port, by a live
   MCP transport handshake, and by continuous integration on Linux, macOS and Windows. The
   worked sessions in chapter E are representative walk-throughs of the tool flow, not
   recordings from hardware; a live-port pass is the next milestone, and this guide will say so
@@ -633,7 +703,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong">serial-console-mcp</td><td class="mono">github.com/sbrunner-atx/serial-console-mcp</td></tr>
     <tr><td class="strong">Installers</td><td class="mono">GitHub Releases · SerialConsoleMCP-Setup.exe · SerialConsoleMCP-0.1.1.pkg</td></tr>
     <tr><td class="strong">PyPI</td><td class="mono">pypi.org/project/serial-console-mcp · uvx serial-console-mcp</td></tr>
-    <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/ (server, presets, cat, civ, rotator) · tests/test_serial_console.py</td></tr>
+    <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/ (server, presets, terminal, cat, civ, rotator) · tests/test_serial_console.py</td></tr>
     <tr><td class="strong">Operating skill</td><td class="mono">skills/serial-console/SKILL.md</td></tr>
     <tr><td class="strong">Live-port harness</td><td class="mono">_hosttest/run_live.py &lt;steps.json&gt;</td></tr>
     <tr><td class="strong">This guide's sources</td><td class="mono">docs/brand/ (HTML + CSS, WeasyPrint)</td></tr>

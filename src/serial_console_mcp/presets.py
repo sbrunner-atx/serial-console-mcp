@@ -9,7 +9,7 @@ from __future__ import annotations
 
 PRESETS: dict[str, dict] = {
     "cisco-console": {
-        "family": "Network console",
+        "family": "Network console", "terminal": "ansi",
         "baud": 9600, "bytesize": 8, "parity": "N", "stopbits": 1,
         "line_ending": "CR", "prompt": r"[#>] ?$", "prompt_regex": True,
         "read": "read_until_prompt",
@@ -18,7 +18,7 @@ PRESETS: dict[str, dict] = {
                  "auto_reply={'--More--': ' '}).",
     },
     "juniper-craft": {
-        "family": "Network console",
+        "family": "Network console", "terminal": "ansi",
         "baud": 9600, "bytesize": 8, "parity": "N", "stopbits": 1,
         "line_ending": "CR", "prompt": r"[#>%] ?$", "prompt_regex": True,
         "read": "read_until_prompt",
@@ -26,7 +26,7 @@ PRESETS: dict[str, dict] = {
                  "Run 'set cli screen-length 0' to stop paging.",
     },
     "linux-console": {
-        "family": "Shell console",
+        "family": "Shell console", "terminal": "ansi",
         "baud": 115200, "bytesize": 8, "parity": "N", "stopbits": 1,
         "line_ending": "CR", "prompt": r"[$#] $", "prompt_regex": True,
         "read": "read_until_prompt",
@@ -69,6 +69,26 @@ PRESETS: dict[str, dict] = {
                  "Rate is the rig's CI-V Baud Rate menu (USB default 19200; the CI-V jack "
                  "is often 9600). Never enable XON/XOFF on a binary protocol.",
     },
+    "xiegu-civ": {
+        "family": "Binary CAT radio",
+        "baud": 19200, "bytesize": 8, "parity": "N", "stopbits": 1,
+        "line_ending": "NONE", "prompt": None, "prompt_regex": False,
+        "read": "read_available",
+        "notes": "Xiegu G90 / X6100 / X6200 speak Icom CI-V; the G90's address is 0x70 "
+                 "(civ_build(..., rig='70')). 19200 by default. Handhelds such as "
+                 "Baofeng/Quansheng have no CAT at all: their cable carries a memory-programming "
+                 "protocol (CHIRP territory), not a console.",
+    },
+    "screen-console": {
+        "family": "Full-screen console", "terminal": "xterm", "cols": 80, "rows": 25,
+        "baud": 115200, "bytesize": 8, "parity": "N", "stopbits": 1,
+        "line_ending": "CR", "prompt": None, "prompt_regex": False,
+        "read": "screen",
+        "notes": "Menu-driven or full-screen interfaces: BIOS setup over a serial console, RAID "
+                 "and BMC consoles, older menu-style switches, vi/top. Keeps an 80x25 screen; "
+                 "read it with the screen tool and navigate with send_keys. Needs the [screen] "
+                 "extra (pyte). 9600 or 115200 depending on the BIOS setting.",
+    },
     "yaesu-rotator": {
         "family": "Rotator",
         "baud": 9600, "bytesize": 8, "parity": "N", "stopbits": 1,
@@ -98,7 +118,7 @@ PRESETS: dict[str, dict] = {
 }
 
 _PRESET_KEYS = ("baud", "bytesize", "parity", "stopbits", "rtscts", "xonxoff",
-                "line_ending", "prompt", "prompt_regex")
+                "line_ending", "prompt", "prompt_regex", "terminal", "cols", "rows")
 
 
 def describe() -> str:
@@ -113,9 +133,10 @@ def describe() -> str:
         else:
             pd = f"{prompt!r}{' (regex)' if p.get('prompt_regex') else ''}"
         framing = f"{p['bytesize']}{p['parity']}{p['stopbits']}"
+        term = p.get("terminal", "dumb")
         lines.append(
-            f"  • {name:<15} {p['family']:<18} {p['baud']} {framing}, "
-            f"flow {flow}, line ending {p['line_ending']}, prompt {pd}"
+            f"  • {name:<15} {p['family']:<20} {p['baud']} {framing}, "
+            f"flow {flow}, line ending {p['line_ending']}, prompt {pd}, terminal {term}"
         )
         lines.append(f"      {p['notes']}")
     return "\n".join(lines)

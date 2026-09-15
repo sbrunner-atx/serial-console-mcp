@@ -1,6 +1,6 @@
 [project]
 name = "serial-console-mcp"
-version = "0.2.0"
+version = "0.3.0"
 description = "An MCP server that lets Claude Desktop drive a serial console: network craft ports, CAT radios, Icom CI-V, rotators, microcontrollers."
 readme = "README.md"
 license = { text = "MIT" }
@@ -43,6 +43,10 @@ dependencies = [
 freeze = [
     "mcp[cli]>=1.2.0,<2",
     "pyinstaller>=6.0",
+    "pyte>=0.8.2",
+]
+screen = [
+    "pyte>=0.8.2",
 ]
 
 [dependency-groups]

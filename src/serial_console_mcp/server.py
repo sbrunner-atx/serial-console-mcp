@@ -70,7 +70,8 @@ except ImportError:
 
 from mcp.server.fastmcp import FastMCP
 
-from . import cat, civ, configure, rotator
+from . import cat, civ, configure, rotator, terminal
+from . import terminal as terminal_module
 from .presets import PRESETS
 from .presets import describe as describe_presets
 
@@ -100,12 +101,14 @@ _PARITY = {"N": serial.PARITY_NONE, "E": serial.PARITY_EVEN, "O": serial.PARITY_
 _STOPBITS = {1: serial.STOPBITS_ONE, 1.5: serial.STOPBITS_ONE_POINT_FIVE,
              2: serial.STOPBITS_TWO}
 _SETTINGS_KEYS = ("port", "name", "preset", "baud", "bytesize", "parity", "stopbits",
-                  "rtscts", "xonxoff", "line_ending", "prompt", "prompt_regex")
+                  "rtscts", "xonxoff", "line_ending", "prompt", "prompt_regex",
+                  "terminal", "cols", "rows")
 _BAUD_CANDIDATES = [9600, 115200, 19200, 38400, 57600, 4800, 2400, 1200, 230400]
 
 LineEnding = Literal["CR", "CRLF", "LF", "NONE"]
 Parity = Literal["N", "E", "O"]
 CaptureFormat = Literal["raw", "annotated"]
+Terminal = Literal["dumb", "ansi", "vt100", "xterm"]
 ControlLine = Literal["DTR", "RTS"]
 
 
@@ -143,6 +146,11 @@ class Connection:
     prompt: str | None = None  # default prompt for read_until_prompt/query_text
     prompt_regex: bool = False
     preset: str = ""
+    terminal: str = "dumb"  # dumb | ansi | vt100 | xterm
+    cols: int = 80
+    rows: int = 24
+    stripper: object = None  # terminal.EscapeStripper when terminal != dumb
+    screen: object = None  # terminal.Screen when terminal is vt100/xterm and pyte is present
     reader: threading.Thread | None = None
     stop: threading.Event = field(default_factory=threading.Event)
     lock: threading.Lock = field(default_factory=threading.Lock)
@@ -342,7 +350,13 @@ def _reader_loop(conn: Connection) -> None:
             break
         if data:
             with conn.lock:
-                conn.rx.extend(data)
+                if conn.screen is not None:
+                    try:
+                        conn.screen.feed(data)
+                    except Exception:
+                        pass
+                text_bytes = conn.stripper.feed(data) if conn.stripper is not None else data
+                conn.rx.extend(text_bytes)
                 overflow = len(conn.rx) - _RX_MAX
                 if overflow > 0:
                     del conn.rx[:overflow]
@@ -498,8 +512,11 @@ def _write(conn: Connection, payload: bytes) -> str | None:
     return None
 
 
-def _render(data: bytes) -> str:
-    """Human-readable decode for display (UTF-8, lossy)."""
+def _render(data: bytes, conn: Connection | None = None) -> str:
+    """Human-readable decode for display: plain UTF-8 for a dumb terminal, or
+    terminal-style line rendering (CR overwrite, backspace, erase) otherwise."""
+    if conn is not None and conn.terminal != "dumb":
+        return terminal.render(data)
     return data.decode("utf-8", "replace")
 
 
@@ -641,6 +658,9 @@ def connect(
     line_ending: LineEnding | None = None,
     prompt: str | None = None,
     prompt_regex: bool | None = None,
+    terminal: Terminal | None = None,
+    cols: int | None = None,
+    rows: int | None = None,
 ) -> str:
     """Open a serial port and start its background reader.
 
@@ -675,6 +695,15 @@ def connect(
             connection, e.g. "# ", "> ", ";" (CAT replies). Say what the device
             shows, with its trailing space.
         prompt_regex: Treat `prompt` as a regular expression.
+        terminal: How to interpret what the device sends. "dumb" (default):
+            raw bytes, right for CAT, CI-V, rotators and most CLIs. "ansi":
+            strip colour/escape sequences and apply CR/backspace overwrites so
+            shells and coloured prompts read cleanly (the console presets use
+            it). "vt100"/"xterm": additionally keep a real screen for
+            full-screen menus, BIOS/BMC consoles, vi/top; read it with the
+            `screen` tool, navigate with `send_keys`.
+        cols: Screen width for vt100/xterm (default 80).
+        rows: Screen height for vt100/xterm (default 24).
     """
     global _default_name
     p = {}
@@ -697,7 +726,14 @@ def connect(
     line_ending = pick(line_ending, "line_ending", "CR")
     prompt = pick(prompt, "prompt", None)
     prompt_regex = bool(pick(prompt_regex, "prompt_regex", False))
+    term = pick(terminal, "terminal", "dumb")
+    cols = int(pick(cols, "cols", 80))
+    rows = int(pick(rows, "rows", 24))
     name = name or _derive_name(port)
+    if term not in terminal_module.TERMINALS:
+        return f"terminal must be one of {', '.join(terminal_module.TERMINALS)} (got {term!r})."
+    if not (20 <= cols <= 500 and 5 <= rows <= 200):
+        return "cols must be 20..500 and rows 5..200."
 
     if stopbits not in _STOPBITS:
         return f"stopbits must be 1, 1.5, or 2 (got {stopbits!r})."
@@ -764,9 +800,28 @@ def connect(
         "port": port, "name": name, "preset": preset, "baud": baud, "bytesize": bytesize,
         "parity": parity, "stopbits": stopbits, "rtscts": rtscts, "xonxoff": xonxoff,
         "line_ending": line_ending, "prompt": prompt, "prompt_regex": prompt_regex,
+        "terminal": term, "cols": cols, "rows": rows,
     }
     conn = Connection(name=name, port=ser, settings=settings, line_ending=line_ending,
-                      prompt=prompt, prompt_regex=prompt_regex, preset=preset)
+                      prompt=prompt, prompt_regex=prompt_regex, preset=preset,
+                      terminal=term, cols=cols, rows=rows)
+    screen_note = ""
+    if term != "dumb":
+        conn.stripper = terminal_module.EscapeStripper()
+    if term in ("vt100", "xterm"):
+        if terminal_module.pyte is None:
+            screen_note = (" The screen model needs the [screen] extra "
+                           "(pip install 'serial-console-mcp[screen]'); running as ansi "
+                           "(clean text, no screen) until then.")
+            conn.terminal = "ansi"
+            settings["terminal"] = "ansi"
+        else:
+            def _answer(b: bytes, _c=conn) -> None:
+                try:
+                    _c.port.write(b)
+                except Exception:
+                    pass
+            conn.screen = terminal_module.Screen(cols, rows, answer=_answer)
     _start_reader(conn)
     with _registry_lock:
         _conns[name] = conn
@@ -783,9 +838,11 @@ def connect(
     others = [n for n in _conns if n != name]
     multi = f"\nOther open connections: {', '.join(others)}." if others else ""
     ro = "\nREAD-ONLY MODE is on: only read-style commands will be sent." if READ_ONLY else ""
+    tdesc = conn.terminal + (f" {cols}x{rows}" if conn.screen is not None else "")
     return (
         f"Connected {name!r}: {conn.describe_settings()}. Line ending {line_ending}, "
-        f"prompt {pd}. Background reader running.{note}{multi}{ro}\n"
+        f"prompt {pd}, terminal {tdesc}. Background reader running.{screen_note}"
+        f"{note}{multi}{ro}\n"
         f"For an interactive console, send a bare return then read_until_prompt."
     )
 
@@ -893,10 +950,11 @@ def status() -> str:
         else:
             pd = repr(conn.prompt) + (" regex" if conn.prompt_regex else "")
         star = " (current)" if name == _default_name else ""
+        tdesc = conn.terminal + (f" {conn.cols}x{conn.rows}" if conn.screen is not None else "")
         lines.append(
             f"{name!r}{star}: {conn.describe_settings()}"
             f"{', preset ' + conn.preset if conn.preset else ''}; line ending {conn.line_ending}, "
-            f"prompt {pd}. Reader {reader}; {buffered} bytes buffered{extra}. "
+            f"prompt {pd}, terminal {tdesc}. Reader {reader}; {buffered} bytes buffered{extra}. "
             f"Lines: {' '.join(ctl) or 'n/a'}.{cap}"
         )
     return "\n".join(lines)
@@ -1028,12 +1086,12 @@ def read_until_prompt(prompt: str | None = None, timeout: float = 10.0, regex: b
     matched, data, replies = _read_until(conn, pat, timeout, auto_reply)
     rep = f" (auto-replied to {', '.join(replies)})" if replies else ""
     if matched:
-        return f"Matched prompt {used!r} after {len(data)} bytes{rep}:\n{_render(data)}"
+        return f"Matched prompt {used!r} after {len(data)} bytes{rep}:\n{_render(data, conn)}"
     if data:
         # Timed out but we have data; hand it back rather than dropping it.
         return (
             f"Prompt {used!r} not seen within {timeout}s{rep}. Got {len(data)} "
-            f"bytes so far (returned; buffer now empty):\n{_render(data)}\n"
+            f"bytes so far (returned; buffer now empty):\n{_render(data, conn)}\n"
             f"If the device is still printing, call read_until_prompt again; if the "
             f"prompt differs, adjust `prompt`; if it is paging, pass auto_reply."
         )
@@ -1060,7 +1118,7 @@ def read_available(read_timeout: float = 1.0, connection: str = "") -> str:
     if not data:
         return "Nothing received within the timeout."
     return (f"Received {len(data)} bytes from {conn.name!r}\n"
-            f"Text: {_render(data)!r}\nHex: {data.hex(' ')}")
+            f"Text: {_render(data, conn)!r}\nHex: {data.hex(' ')}")
 
 
 @mcp.tool()
@@ -1104,7 +1162,7 @@ def query_text(data: str, line_ending: LineEnding | None = None, prompt: str | N
         return ("Sent, but no reply within the timeout. Wrong baud rate or wrong "
                 "line ending are the usual causes; for a CLI, pass the device's "
                 "prompt so it reads until the prompt instead.")
-    return f"Reply ({len(data_b)} bytes): {_render(data_b)!r}\nHex: {data_b.hex(' ')}"
+    return f"Reply ({len(data_b)} bytes): {_render(data_b, conn)!r}\nHex: {data_b.hex(' ')}"
 
 
 class ExpectStep(BaseModel):
@@ -1182,10 +1240,10 @@ def expect(steps: list[ExpectStep], auto_reply: dict[str, str] | None = None,
         rep = f" (auto-replied to {', '.join(replies)})" if replies else ""
         if matched:
             out.append(f"{prefix}matched {st.expect!r} after {len(data)} bytes{rep}:\n"
-                       f"{_render(data)}")
+                       f"{_render(data, conn)}")
         else:
             out.append(f"{prefix}TIMEOUT: {st.expect!r} not seen in {st.timeout}s{rep}. "
-                       f"Got {len(data)} bytes:\n{_render(data)}")
+                       f"Got {len(data)} bytes:\n{_render(data, conn)}")
             if stop_on_timeout:
                 out.append(f"Stopped after step {i} of {len(steps)}.")
                 break
@@ -1201,6 +1259,66 @@ def clear_buffer(connection: str = "") -> str:
         return err
     dropped = _drain(conn)
     return f"Cleared {len(dropped)} buffered bytes on {conn.name!r}."
+
+
+@mcp.tool()
+def send_keys(keys: list[str], connection: str = "") -> str:
+    """Press keys by name, encoded the way a VT100/xterm terminal sends them.
+
+    Use it for what send_text can't type: Ctrl-C to interrupt a running command
+    (ping, monitor, a stuck process), Ctrl-Z, Esc, Tab (completion), arrows
+    (history, menus), Enter alone, function keys, Page Up/Down. Each item is a
+    key name ("ctrl-c", "esc", "tab", "enter", "up", "down", "left", "right",
+    "home", "end", "pgup", "pgdn", "backspace", "delete", "f1".."f12", "space"),
+    a single character, or "text:..." for a literal run. Nothing is read;
+    follow with read_until_prompt, read_available, or screen.
+    """
+    conn, err = _resolve(connection)
+    if conn is None:
+        return err
+    payload, desc, err = terminal_module.encode_keys(keys)
+    if err:
+        return err
+    if READ_ONLY:
+        literal = [d for d in desc if d.startswith("'") or d.startswith("text ")]
+        if literal:
+            return (f"Read-only mode (SERIAL_CONSOLE_READ_ONLY) refused literal keys "
+                    f"{', '.join(literal)}; named keys (ctrl-c, esc, arrows...) are allowed.")
+    if not payload:
+        return "No keys given."
+    if err := _write(conn, payload):
+        return err
+    return f"Pressed {', '.join(desc)} on {conn.name!r} ({len(payload)} bytes)."
+
+
+@mcp.tool()
+def screen(reset: bool = False, connection: str = "") -> str:
+    """Show the current terminal screen of a vt100/xterm connection: what a
+    person at a real terminal would see right now, as rows of text, plus the
+    cursor position. This is how to read full-screen interfaces (BIOS setup,
+    RAID/BMC consoles, menu-driven switches, vi, top): press keys with
+    send_keys, then look at the screen again.
+
+    Args:
+        reset: Clear the screen model first (after garbage, or a resize).
+        connection: Which open connection (name). Default: the current one.
+    """
+    conn, err = _resolve(connection, strict=False)
+    if conn is None:
+        return err
+    if conn.screen is None:
+        hint = ("Install the [screen] extra (pip install 'serial-console-mcp[screen]') and "
+                if terminal_module.pyte is None else "")
+        return (f"{conn.name!r} has no screen model (terminal={conn.terminal}). {hint}"
+                f"connect with terminal=\"xterm\" (or the screen-console preset) to use it. "
+                f"For line-oriented output use read_until_prompt or get_transcript.")
+    with conn.lock:
+        text = conn.screen.text()
+        x, y = conn.screen.cursor()
+        if reset:
+            conn.screen.reset()
+    return (f"Screen of {conn.name!r} ({conn.cols}x{conn.rows}, cursor at column {x + 1}, "
+            f"row {y + 1}){' — reset' if reset else ''}:\n{text}")
 
 
 # ----------------------------------------------------------------------------
@@ -1357,7 +1475,8 @@ def get_transcript(last_bytes: int = 4000, connection: str = "") -> str:
     if not total:
         return f"Nothing received yet on {conn.name!r}."
     return (f"Transcript of {conn.name!r}: last {len(tail)} of {total} bytes"
-            f"{' (rolling window full)' if total >= _TRANSCRIPT_MAX else ''}:\n{_render(tail)}")
+            f"{' (rolling window full)' if total >= _TRANSCRIPT_MAX else ''}:\n"
+            f"{_render(tail, conn)}")
 
 
 @mcp.resource("serial://transcript/{name}")
@@ -1367,7 +1486,7 @@ def transcript_resource(name: str) -> str:
     if conn is None:
         return f"No open connection named {name!r}."
     with conn.lock:
-        return _render(bytes(conn.transcript))
+        return _render(bytes(conn.transcript), conn)
 
 
 # ----------------------------------------------------------------------------

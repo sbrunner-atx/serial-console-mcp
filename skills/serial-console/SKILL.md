@@ -28,6 +28,7 @@ between calls; `get_transcript` re-reads what earlier calls already returned.
 | Send | `send_text`, `send_hex` |
 | Read | `read_until_prompt`, `read_available`, `query_text`, `clear_buffer` |
 | Script | `expect` (steps + `auto_reply`) |
+| Keys and screens | `send_keys` (Ctrl-C, Esc, Tab, arrows, F-keys), `screen` (xterm/vt100 grid) |
 | Lines | `set_lines`, `pulse_line`, `send_break` |
 | Record | `capture_start`, `capture_stop`, `get_transcript` (also resource `serial://transcript/{name}`) |
 | Diagnose | `port_in_use_by`, `detect_baud` |
@@ -70,6 +71,18 @@ between calls; `get_transcript` re-reads what earlier calls already returned.
 - Several ports can be open at once. Give each a `name` ("rig", "rotator") and
   pass `connection=` when it is not the most recently used one. `status` shows
   all of them and which is current.
+
+## Terminals
+
+- `dumb` is the default and right for CAT, CI-V, rotators and most CLIs.
+- Shells and coloured prompts: `terminal="ansi"` (the console presets set it).
+  Escape sequences are stripped as they arrive, so prompts match through colour
+  codes and progress bars render as their final line.
+- Full-screen programs (BIOS setup, RAID/BMC consoles, menu switches, vi, top):
+  `terminal="xterm"` or the `screen-console` preset, then loop `send_keys` and
+  `screen`. Read the screen after every keypress; never assume a menu moved.
+- To interrupt anything: `send_keys(["ctrl-c"])`, then read. Never send Ctrl-C
+  as text.
 
 ## Long output and paging
 

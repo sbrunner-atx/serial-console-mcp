@@ -6,7 +6,7 @@
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/serial-console-mcp?label=pypi&cacheSeconds=3600)](https://pypi.org/project/serial-console-mcp/)
-&nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: experimental (0.2.0)**
+&nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: experimental (0.3.0)**
 
 This adds a few tools to **Claude Desktop** so you can talk to anything on a serial
 port — a network device's console/craft port (Juniper, Cisco, etc.), a radio,
@@ -46,6 +46,7 @@ interactive CLIs properly.
 | `list_serial_ports` | Enumerate ports with description and USB hardware id; marks ones open here |
 | `list_presets` | Usual settings per device family: Cisco/Juniper/Linux consoles, Kenwood/Elecraft/Yaesu CAT, Icom CI-V, rotators, Arduino, NMEA GPS |
 | `connect` / `reconnect_last` / `disconnect` | Open a port by name. Defaults 9600 8N1, no flow control; baud, data bits, parity, stop bits, RTS/CTS, XON/XOFF, line ending and prompt are all settable, or loaded from a preset. Several ports at once |
+| `send_keys` / `screen` | Press Ctrl-C, Esc, Tab, arrows, F-keys by name; view the VT100/xterm screen of a full-screen console (BIOS, BMC, menu switches, vi) |
 | `send_text` / `send_hex` | Write an ASCII line (CR / LF / CRLF / none) or raw hex bytes. Write-only |
 | `read_until_prompt` | Return buffered output up to a literal or regex prompt, leaving the rest; `auto_reply` pages through `--More--` |
 | `read_available` | Return whatever has arrived, as text and hex |
@@ -60,7 +61,11 @@ interactive CLIs properly.
 | `clear_buffer` / `status` | Housekeeping; status shows every open port with control-line states |
 
 Ports are opened by name ("rig", "rotator"); tools default to the most recently
-used one. The receive buffer is capped at 4 MB per port; if a device streams for
+used one. Each connection has a terminal mode: `dumb` (raw bytes, the default),
+`ansi` (colours and escape sequences stripped, CR/backspace overwrites applied,
+used by the console presets), or `xterm`/`vt100` (a real screen you can read
+with `screen`; needs `pip install 'serial-console-mcp[screen]'`, included in
+the installers). The receive buffer is capped at 4 MB per port; if a device streams for
 hours unread, the oldest bytes are dropped and `status` says how many.
 
 ### Environment variables
@@ -141,6 +146,8 @@ Plain-English requests work. Some examples:
 - "What is the TS-590 tuned to?" (`query_text("FA;")`, `cat_parse`).
 - "Turn the rotator to 45 degrees and confirm" (`rotator_build`, `query_text`, `rotator_parse`).
 - "Record this console session to a file."
+- "Hit Ctrl-C, that ping is still running." (`send_keys`)
+- "Open the BIOS console at 115200 and show me the screen; go down two and press Enter." (`screen-console` preset, `screen`, `send_keys`)
 - "Reconnect to the same port as last time." (it remembers)
 - "Send a return, then read until the login prompt."
 - "Log in as admin and run `show interfaces terse`, then show me all of it."
