@@ -34,10 +34,14 @@ Filename: "{app}\serial-console-mcp.exe"; \
   StatusMsg: "Registering with Claude Desktop..."
 
 [UninstallRun]
-; Runs before files are removed, so the exe still exists here.
+; Runs before files are removed, so the exe still exists here. Inno does not
+; allow runasoriginaluser in this section, so this runs in the uninstaller's
+; (elevated) context: it cleans the entry when the admin and the user are the
+; same account, which is the common single-user case. Otherwise Claude Desktop
+; simply shows the server as unavailable until the entry is removed by hand.
 Filename: "{app}\serial-console-mcp.exe"; \
   Parameters: "configure --remove"; \
-  Flags: runhidden runasoriginaluser; \
+  Flags: runhidden; \
   RunOnceId: "RemoveClaudeEntry"
 
 [Messages]

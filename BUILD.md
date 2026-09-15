@@ -26,7 +26,11 @@ entries) and backs up the old file first.
 Installer postinstall steps run **elevated** (root on macOS, admin on Windows),
 but Claude's config is per-user. Writing it from the elevated context lands in the
 wrong home and silently does nothing. Both installers correct for this:
-- **Windows:** the `[Run]` entry has `Flags: runasoriginaluser`.
+- **Windows:** the `[Run]` entry has `Flags: runasoriginaluser`. Inno does not allow
+  that flag in `[UninstallRun]`, so the uninstall-time `configure --remove` runs
+  elevated; it only reaches the right profile when the admin account is the user's
+  own (the usual single-user PC). Otherwise the stale entry is harmless: Claude
+  Desktop shows the server as unavailable until it is removed by hand.
 - **macOS:** `scripts/postinstall` finds the console user and runs the configurator
   as them via `launchctl asuser <uid> sudo -u <user> ... --config-home <home>`.
 
