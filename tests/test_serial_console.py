@@ -251,13 +251,19 @@ def test_read_until_prompt_non_utf8_offsets_are_exact():
     assert "tail" in m.read_available(0.5)
 
 
-def test_read_available_hex_and_settle():
+def test_read_available_hex_and_settle(monkeypatch):
+    # Widen the idle window so the "second chunk arrives during settle" case has a
+    # large timing margin on slow CI runners; the logic under test is the same.
+    monkeypatch.setattr(m, "_IDLE_SETTLE", 1.0)
     p = _connect()
     p.feed(b"\xfe\xfe\xe0\x94\x03", delay=0.05)
-    p.feed(b"\x00\x50\x42\x14\x00\xfd", delay=0.12)  # arrives inside the settle window
+    p.feed(b"\x00\x50\x42\x14\x00\xfd", delay=0.4)  # well inside the 1.0 s settle window
+    t0 = time.time()
     out = m.read_available(2.0)
     assert out.startswith("Received 11 bytes")
     assert "Hex: fe fe e0 94 03 00 50 42 14 00 fd" in out
+    # Returned once the line went quiet: after the 2nd chunk + settle, not the full timeout.
+    assert 1.3 < time.time() - t0 < 2.0
 
 
 def test_query_text_idle_mode():

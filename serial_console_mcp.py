@@ -217,9 +217,11 @@ def _pushback(data: bytes) -> None:
         _rx_buffer[:0] = data
 
 
-def _read_until_idle(read_timeout: float, settle: float = _IDLE_SETTLE) -> bytes:
+def _read_until_idle(read_timeout: float, settle: float | None = None) -> bytes:
     """Wait up to `read_timeout` for the first bytes, then keep collecting until the
     device has been silent for `settle` seconds. Returns b"" if nothing arrived."""
+    if settle is None:
+        settle = _IDLE_SETTLE  # looked up at call time so tests can widen it
     deadline = time.time() + read_timeout
     buf = bytearray()
     while time.time() < deadline and not buf:
