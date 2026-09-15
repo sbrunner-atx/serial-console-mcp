@@ -122,8 +122,9 @@ retyped line rather than reading whatever has arrived. Then
 `send_keys(["ctrl-u"])` clears the half-typed line and `read_until_prompt()`
 sees the bare prompt again. Junos redraws an edited line with spaces and
 backspaces; the `ansi` terminal matches the prompt as the line is shown, so this
-works after `?`, Tab completion and Ctrl-U without an extra return. In `dumb`
-mode it does not: send a bare return there to draw a clean prompt.
+works after `?` and Ctrl-U without an extra return. Tab completion on Junos 15.1
+only adds the rest of the word in place, so it needs nothing special. In `dumb`
+mode the redraws do not match: send a bare return there to draw a clean prompt.
 
 ## Paging and long output
 

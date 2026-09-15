@@ -486,8 +486,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   and says so.</p>
 
   <h3>Prompts on a redrawn line</h3>
-  <p>Ask Junos for help with <span class="mono">show system ?</span>, complete a word with Tab,
-  or clear the line with Ctrl-U, and it does not print a fresh prompt. It sends a carriage
+  <p>Ask Junos for help with <span class="mono">show system ?</span>, or clear the line with
+  Ctrl-U, and it does not print a fresh prompt. It sends a carriage
   return, retypes the line, pads it with spaces and backs up over them, so the bytes end in
   <span class="mono">show system&nbsp;&nbsp;&nbsp;&nbsp;\b\b\b</span> rather than in
   <span class="mono">&gt;&nbsp;</span>. In <span class="mono">ansi</span>,
@@ -498,7 +498,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   after <span class="mono">?</span> the pattern <span class="mono">&gt; show system $</span>
   finds the retyped words. A line that has ended, or that a carriage return has just rewound,
   is never taken for a prompt. <span class="mono">dumb</span> mode matches the bytes exactly,
-  backspaces and all.</p>
+  backspaces and all. Tab completion is different: on Junos 15.1 it only adds the rest of
+  the word in place, so it needs nothing special.</p>
 
   <h3>Keys by name</h3>
   <p><span class="mono">send_text</span> types a line. <span class="mono">send_keys</span> presses

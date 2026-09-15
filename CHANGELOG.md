@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Prompt matching in `ansi`, `vt100` and `xterm` mode sees the last line as the
   terminal shows it, up to the cursor. Junos redraws an edited line with a CR,
-  padding spaces and backspaces after `?`, Tab completion and Ctrl-U, so the
+  padding spaces and backspaces after `?` and Ctrl-U, so the
   bytes ended in `\b` and `read_until_prompt` and `expect` timed out on any
   prompt ending in `$`, the `juniper-craft` default `[#>%] ?$` included (seen
   on the EX2200-C). A line that has ended, or that a bare CR has just rewound,

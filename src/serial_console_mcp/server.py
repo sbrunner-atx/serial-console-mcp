@@ -442,7 +442,7 @@ def _match_end(conn: Connection, pat: re.Pattern, collected: bytearray, text: st
 
     `text` is `collected` decoded as latin-1 (1 char == 1 byte: exact offsets) and
     is searched first. On an ansi/vt100/xterm connection a device that redraws its
-    input line with CR, spaces and backspaces (Junos after `?`, Tab or Ctrl-U)
+    input line with CR, spaces and backspaces (Junos after `?` or Ctrl-U)
     leaves bytes that never end the way the prompt looks, so the last, unterminated
     line is also searched as the terminal shows it up to the cursor. A match that
     reaches into that line consumes all of `collected`, the bytes that drew it.
@@ -725,7 +725,7 @@ def connect(
             strip colour/escape sequences and apply CR/backspace overwrites so
             shells and coloured prompts read cleanly (the console presets use
             it); prompts are also matched on the last line as displayed, so a
-            line redrawn with spaces and backspaces (Junos after ?, Tab or
+            line redrawn with spaces and backspaces (Junos after ? or
             Ctrl-U) still ends in its prompt. "vt100"/"xterm": additionally keep a real screen for
             full-screen menus, BIOS/BMC consoles, vi/top; read it with the
             `screen` tool, navigate with `send_keys`.
