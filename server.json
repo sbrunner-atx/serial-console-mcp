@@ -1,7 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.sbrunner-atx/serial-console-mcp",
-  "description": "Serial consoles and radios from an MCP client: craft ports, VT100 screens, CAT, CI-V, rotators.",
+  "title": "Serial Console MCP: AI for telecom equipment",
+  "description": "Let AI configure telecom gear over serial: Juniper and Cisco, Icom CI-V, Yaesu/Kenwood CAT, rotators",
+  "websiteUrl": "https://github.com/sbrunner-atx/serial-console-mcp#readme",
   "repository": {
     "url": "https://github.com/sbrunner-atx/serial-console-mcp",
     "source": "github"

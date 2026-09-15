@@ -1,7 +1,7 @@
 [project]
 name = "serial-console-mcp"
 version = "0.3.0"
-description = "An MCP server that lets Claude Desktop drive a serial console: network craft ports, CAT radios, Icom CI-V, rotators, microcontrollers."
+description = "AI for the configuration of telecommunication equipment over its serial console: Juniper and Cisco routers and switches, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, and GS-232 antenna rotators. An MCP server for Claude and other AI assistants."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
@@ -19,17 +19,31 @@ keywords = [
     "cat",
     "ci-v",
     "craft-port",
+    "juniper",
+    "junos",
+    "cisco",
+    "ios",
+    "network-automation",
+    "telecom",
+    "icom",
+    "yaesu",
+    "kenwood",
+    "elecraft",
+    "rotator",
+    "gs-232",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
+    "Intended Audience :: Telecommunications Industry",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Communications :: Ham Radio",
     "Topic :: System :: Hardware",
+    "Topic :: System :: Networking",
     "Topic :: Terminals :: Serial",
 ]
 dependencies = [

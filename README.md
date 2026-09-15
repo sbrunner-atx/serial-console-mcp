@@ -2,15 +2,34 @@
 
 <!-- mcp-name: io.github.sbrunner-atx/serial-console-mcp -->
 
-**Let Claude drive your serial console.**
+**AI for the configuration of telecommunication equipment, through the console port it already has.**
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/serial-console-mcp?label=pypi&cacheSeconds=3600)](https://pypi.org/project/serial-console-mcp/)
 &nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: 0.3.0, verified live on a Juniper EX2200 console**
 
-This adds a few tools to **Claude Desktop** so you can talk to anything on a serial
-port — a network device's console/craft port (Juniper, Cisco, etc.), a radio,
-rotator, amplifier, antenna switch, or a microcontroller — just by *asking Claude*.
+serial-console-mcp connects an AI assistant such as Claude to the serial console
+of the equipment that runs networks and radio stations:
+
+- **Routers and switches.** Juniper (Junos) and Cisco (IOS, IOS-XE) console and
+  craft ports: log in, read state, change configuration with a safety net
+  (`commit confirmed` on Junos, `reload in` on IOS), and leave the console as it
+  was found.
+- **Radio transceivers.** Icom and Xiegu over CI-V; Kenwood, Yaesu and Elecraft
+  over their text CAT protocols: identify the rig, read and set frequency and
+  mode.
+- **Antenna rotators.** Yaesu GS-232 and the many controllers that speak it:
+  read the heading, turn, stop.
+
+You say what you want in plain language. The assistant drives the console
+through this server, Claude Desktop asks you to approve each step, and bundled
+operating skills teach it the Junos and IOS basics: which mode a prompt means,
+how to get in and out, which show commands answer everyday questions.
+
+Juniper support is verified on a real EX2200 console. Cisco, CI-V, CAT and
+rotator support follows the vendors' protocol references and has not yet met
+hardware on this bench. Anything else on a serial cable works too: Linux
+consoles, BIOS and BMC screens, microcontrollers, GPS receivers.
 
 You do **not** need to know any programming. After it's installed you talk to Claude
 normally:
