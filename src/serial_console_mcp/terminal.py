@@ -223,6 +223,47 @@ def render(data: bytes) -> str:
     sequences are stripped first if any remain.
     """
     text = _tokenize(strip(data))
+    lines, cur, _ = _edit(text)
+    if cur or not lines or text.endswith("\n"):
+        lines.append(cur)  # a trailing newline leaves an empty current line, as on a terminal
+    return "\n".join("".join(line).rstrip() for line in lines)
+
+
+def line_start(data: bytes | bytearray) -> int:
+    """Offset where the last line of stripped stream bytes begins: just after the
+    last LF or clear marker that is not the count byte of a cursor marker."""
+    end = len(data)
+    while True:
+        pos = max(data.rfind(b"\n", 0, end), data.rfind(EscapeStripper.CLEAR, 0, end))
+        if pos <= 0 or data[pos - 1] not in (0xFB, 0xFC):
+            return pos + 1
+        end = pos - 1
+
+
+_LINE_EDITS = re.compile(rb"[\x00-\x09\x0b-\x1f\x7f\xf8-\xfc]")
+
+
+def has_line_edits(data: bytes) -> bool:
+    """True if stripped bytes hold anything that makes the displayed line differ
+    from the bytes: CR, backspace, tab, other controls, or erase/cursor markers."""
+    return _LINE_EDITS.search(data) is not None
+
+
+def cursor_line(data: bytes) -> str:
+    """One unterminated line of stripped stream bytes (see `line_start`) as a
+    terminal shows it, from column 0 up to the cursor.
+
+    That is where a prompt ends once a device has redrawn its input line with CR,
+    spaces and backspaces: ``\\rroot@sw> show system    \\b\\b\\b`` reads
+    ``root@sw> show system ``. A line just rewound by a bare CR reads empty.
+    """
+    _, cur, col = _edit(_tokenize(data))  # already stripped: count bytes must not be re-stripped
+    return "".join(cur[:col]).ljust(col)
+
+
+def _edit(text: str) -> tuple[list[list[str]], list[str], int]:
+    """Apply terminal line editing to tokenized text: the finished lines, the
+    current line and the cursor column."""
     lines: list[list[str]] = []
     cur: list[str] = []
     col = 0
@@ -271,9 +312,7 @@ def render(data: bytes) -> str:
                 cur.append(ch)
             col += 1
         i += 1
-    if cur or not lines or text.endswith("\n"):
-        lines.append(cur)  # a trailing newline leaves an empty current line, as on a terminal
-    return "\n".join("".join(line).rstrip() for line in lines)
+    return lines, cur, col
 
 
 # ---------------------------------------------------------------------------

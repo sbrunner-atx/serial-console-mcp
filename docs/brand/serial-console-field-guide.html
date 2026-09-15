@@ -485,6 +485,21 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   it. Without it, <span class="mono">xterm</span> quietly runs as <span class="mono">ansi</span>
   and says so.</p>
 
+  <h3>Prompts on a redrawn line</h3>
+  <p>Ask Junos for help with <span class="mono">show system ?</span>, complete a word with Tab,
+  or clear the line with Ctrl-U, and it does not print a fresh prompt. It sends a carriage
+  return, retypes the line, pads it with spaces and backs up over them, so the bytes end in
+  <span class="mono">show system&nbsp;&nbsp;&nbsp;&nbsp;\b\b\b</span> rather than in
+  <span class="mono">&gt;&nbsp;</span>. In <span class="mono">ansi</span>,
+  <span class="mono">vt100</span> and <span class="mono">xterm</span> mode,
+  <span class="mono">read_until_prompt</span> and <span class="mono">expect</span> also try the
+  pattern on the last line as the screen shows it, up to the cursor: after Ctrl-U the preset&rsquo;s
+  <span class="mono">[#&gt;%] ?$</span> finds <span class="mono">root@sw&gt;&nbsp;</span>, and
+  after <span class="mono">?</span> the pattern <span class="mono">&gt; show system $</span>
+  finds the retyped words. A line that has ended, or that a carriage return has just rewound,
+  is never taken for a prompt. <span class="mono">dumb</span> mode matches the bytes exactly,
+  backspaces and all.</p>
+
   <h3>Keys by name</h3>
   <p><span class="mono">send_text</span> types a line. <span class="mono">send_keys</span> presses
   keys: <i>&ldquo;hit Ctrl-C, that ping is still running&rdquo;</i>, <i>&ldquo;press Tab to
@@ -553,7 +568,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td>VLANs, neighbours, routes</td><td><span class="mono">show ethernet-switching interfaces</span>, <span class="mono">show vlans</span>, <span class="mono">show lldp neighbors</span>, <span class="mono">show route</span></td></tr>
     <tr><td>Config and log</td><td><span class="mono">show configuration | display set</span>, <span class="mono">show log messages | last 50</span></td></tr>
   </table>
-  <p><span class="mono">set cli screen-length 0</span> once, or <span class="mono">| no-more</span>, before anything long. At a <span class="mono">---(more</span> pager every key is a pager command (<span class="mono">q</span> quits, <span class="mono">s</span> saves the output to a file), so press <span class="mono">q</span> before typing the next command. Unsure a command exists? Type <span class="mono">?</span> after the words so far, clear the line with Ctrl-U, and send a bare return for a clean prompt.</p>
+  <p><span class="mono">set cli screen-length 0</span> once, or <span class="mono">| no-more</span>, before anything long. At a <span class="mono">---(more</span> pager every key is a pager command (<span class="mono">q</span> quits, <span class="mono">s</span> saves the output to a file), so press <span class="mono">q</span> before typing the next command. Unsure a command exists? Type <span class="mono">?</span> after the words so far, clear the line with Ctrl-U, and read the prompt again; the ansi terminal matches it on the redrawn line, so no extra return is needed.</p>
 
   <h3>ios-operating</h3>
   <table>

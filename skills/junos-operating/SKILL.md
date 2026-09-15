@@ -115,12 +115,15 @@ From configuration mode, prefix with `run` (`run show interfaces terse`).
 
 Not sure a command exists? Type the words so far and `?` (`show system ?`):
 Junos lists the completions at once, no Enter needed. Send it with
-`line_ending="NONE"`, then `send_keys(["ctrl-u"])` to clear the half-typed line
-and a bare return to draw a clean prompt; `read_until_prompt` after that return
-brings back the whole list. Reading straight after `?` can return before a long
-list has started. Junos redraws an edited line with spaces and backspaces, so a
-prompt pattern ending in `$` does not match until that return; the same holds
-after Tab completion.
+`line_ending="NONE"` and read the list with
+`read_until_prompt(r"> show system $", regex=True)`: Junos retypes the words
+after the list, and at 9600 baud a long list can take seconds, so wait for that
+retyped line rather than reading whatever has arrived. Then
+`send_keys(["ctrl-u"])` clears the half-typed line and `read_until_prompt()`
+sees the bare prompt again. Junos redraws an edited line with spaces and
+backspaces; the `ansi` terminal matches the prompt as the line is shown, so this
+works after `?`, Tab completion and Ctrl-U without an extra return. In `dumb`
+mode it does not: send a bare return there to draw a clean prompt.
 
 ## Paging and long output
 
