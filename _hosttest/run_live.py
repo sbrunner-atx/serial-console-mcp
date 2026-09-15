@@ -4,7 +4,7 @@
 Usage:  run_live.py <steps.json>
 Runs every step in a single process so the open port + reader thread persist.
 Each step is a dict:
-  {"op":"connect","port":"/dev/cu.usbserial-XXX","baud":9600}
+  {"op":"connect","port":"/dev/cu.usbserial-XXX","baud":9600,"preset":"","name":""}
   {"op":"send","data":"show version","ending":"LF","clear":true}
   {"op":"send_cr"}                              # write a bare carriage return
   {"op":"read_until","prompt":"> ","timeout":8}
@@ -28,23 +28,30 @@ def run(steps):
         op = s.get("op")
         print(f"\n=== step {i}: {op} {({k: v for k, v in s.items() if k != 'op'})} ===")
         if op == "connect":
-            print(m.connect(s["port"], s.get("baud", 9600),
-                            timeout=s.get("timeout", 1.0)))
+            print(m.connect(s["port"], preset=s.get("preset", ""), name=s.get("name", ""),
+                            baud=s.get("baud"), line_ending=s.get("line_ending"),
+                            prompt=s.get("prompt")))
         elif op == "send":
-            print(m.send_text(s["data"], s.get("ending", "CR"),
+            print(m.send_text(s["data"], s.get("ending"),
                               clear_buffer_first=s.get("clear", False)))
         elif op == "send_cr":
             print(m.send_text("", "CR"))
         elif op == "read_until":
-            print(m.read_until_prompt(s.get("prompt", "#"),
-                                      s.get("timeout", 10.0),
-                                      regex=s.get("regex", False)))
+            print(m.read_until_prompt(s.get("prompt"), s.get("timeout", 10.0),
+                                      regex=s.get("regex")))
         elif op == "read_avail":
             print(m.read_available(s.get("timeout", 1.0)))
         elif op == "clear":
             print(m.clear_buffer())
         elif op == "status":
             print(m.status())
+        elif op == "lines":
+            print(m.set_lines(dtr=s.get("dtr"), rts=s.get("rts")))
+        elif op == "pulse":
+            print(m.pulse_line(s.get("line", "DTR"), s.get("ms", 100), s.get("level", True)))
+        elif op == "detect_baud":
+            print(m.detect_baud(s["port"], probe=s.get("probe", ""),
+                                probe_line_ending=s.get("ending", "CR")))
         elif op == "disconnect":
             print(m.disconnect())
         else:

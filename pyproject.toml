@@ -1,6 +1,6 @@
 [project]
 name = "serial-console-mcp"
-version = "0.1.1"
+version = "0.2.0"
 description = "An MCP server that lets Claude Desktop drive a serial console: network craft ports, CAT radios, Icom CI-V, rotators, microcontrollers."
 readme = "README.md"
 license = { text = "MIT" }
