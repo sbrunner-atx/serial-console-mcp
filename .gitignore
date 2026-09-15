@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Installer build artifacts
+Output/
+pkgroot/
+*.pkg
+*-component.pkg
+
+# OS
+.DS_Store

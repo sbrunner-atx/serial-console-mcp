@@ -1,0 +1,41 @@
+name: build-installers
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pyinstaller
+      - run: pyinstaller --onefile --name ham-serial-mcp --collect-all mcp ham_serial_mcp.py
+      - name: Compile Inno Setup installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
+        with:
+          path: installer.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: Output/*.exe
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build pkg (unsigned in CI unless signing secrets are wired up)
+        run: |
+          chmod +x build_macos.sh scripts/postinstall
+          ./build_macos.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-pkg
+          path: HamSerialMCP-*.pkg
