@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Operating skills `junos-operating` and `ios-operating` (`skills/`): modes
+  from the prompt, shell/CLI/configure transitions, commit and rollback or the
+  IOS reload-timer discipline, everyday show commands, recovery. Field Guide
+  chapter 06.
+
 ### Verified
 - Live session on 2026-09-15: the 0.3.0 PyPI package, launched via `uvx` as
   Claude Desktop does, drove a Juniper EX2200-C (Junos 15.1R6.7) console over

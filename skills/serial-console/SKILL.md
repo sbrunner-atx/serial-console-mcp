@@ -36,6 +36,9 @@ between calls; `get_transcript` re-reads what earlier calls already returned.
 | Icom CI-V | `civ_build`, `civ_parse`, `civ_freq` |
 | Rotator (GS-232) | `rotator_build`, `rotator_parse` |
 
+For a Juniper, also load `junos-operating`; for a Cisco or IOS-like CLI,
+`ios-operating`. They carry the mode model and the commit/save discipline.
+
 ## The six rules
 
 1. **Sending never reads.** After `send_text` or `send_hex`, call a read tool.

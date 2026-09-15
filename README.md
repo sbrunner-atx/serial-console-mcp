@@ -68,6 +68,18 @@ with `screen`; needs `pip install 'serial-console-mcp[screen]'`, included in
 the installers). The receive buffer is capped at 4 MB per port; if a device streams for
 hours unread, the oldest bytes are dropped and `status` says how many.
 
+### Operating skills
+
+Three skill files in `skills/` teach an agent the discipline, the way the
+fldigi-mcp skills do; copy them into `~/.claude/skills/` or a project's
+`.claude/skills/`:
+
+| Skill | What it teaches |
+| --- | --- |
+| `serial-console` | The console model, the six rules, terminal modes, keys, presets |
+| `junos-operating` | Junos modes from the prompt (`%` shell, `>` operational, `#` configure), out of the BSD shell and back, `configure exclusive`, `show \| compare`, `commit confirmed`, `rollback`, everyday show commands |
+| `ios-operating` | IOS modes (`>`, `#`, `(config)#`), `enable`/`configure terminal`/`end`, `reload in 10` as the safety net, `write memory`, everyday show commands |
+
 ### Environment variables
 
 | Variable | Effect |

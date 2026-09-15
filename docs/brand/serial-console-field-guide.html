@@ -60,6 +60,7 @@
   <div class="toc-row"><span class="tno">03</span><span class="tt"><a href="#devices">The device playbook</a></span><span class="leader"></span><span class="tp"><a href="#devices"></a></span></div>
   <div class="toc-row"><span class="tno">04</span><span class="tt"><a href="#shack">The shack — several ports, control lines, scripts, capture</a></span><span class="leader"></span><span class="tp"><a href="#shack"></a></span></div>
   <div class="toc-row"><span class="tno">05</span><span class="tt"><a href="#terminals">Terminals — clean text, keys, and a real screen</a></span><span class="leader"></span><span class="tp"><a href="#terminals"></a></span></div>
+  <div class="toc-row"><span class="tno">06</span><span class="tt"><a href="#netskills">Operating skills — Junos and IOS, the basics</a></span><span class="leader"></span><span class="tp"><a href="#netskills"></a></span></div>
 
   <div class="toc-group">At the bench</div>
   <div class="toc-row"><span class="tno">E</span><span class="tt"><a href="#examples">Worked sessions</a></span><span class="leader"></span><span class="tp"><a href="#examples"></a></span></div>
@@ -519,6 +520,72 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   refused, since those are typing.</p>
 </div>
 
+<!-- ============ 06 · NETWORK SKILLS ============ -->
+<div class="chapter" id="netskills">
+  <div class="eyebrow">Chapter 06 · Operating skills</div>
+  <h2>Junos and IOS, the Basics</h2>
+  <div class="h2rule"></div>
+  <p class="lead">The server knows about bytes and prompts. Two skills teach the agent what the
+  prompts mean on the two console families it will meet most: how to tell which mode it is in,
+  how to get out of one and into another, how to change something without cutting the branch it
+  sits on, and which show commands answer the everyday questions. Both live in
+  <span class="mono">skills/</span> and load the way the fldigi skills do.</p>
+
+  <h3>junos-operating</h3>
+  <table>
+    <tr><th style="width:22%">Prompt ends in</th><th style="width:22%">Mode</th><th>Move</th></tr>
+    <tr><td class="mono">%</td><td>FreeBSD shell</td><td><span class="mono">cli</span> to reach the CLI. <span class="mono">root</span> always lands here; put the console back here if that is how you found it.</td></tr>
+    <tr><td class="mono">&gt;</td><td>Operational</td><td><span class="mono">show …</span>; <span class="mono">configure exclusive</span> to edit; <span class="mono">exit</span> back to the shell (or to <span class="mono">login:</span>).</td></tr>
+    <tr><td class="mono"># with [edit] above</td><td>Configuration</td><td><span class="mono">show | compare</span>, <span class="mono">commit check</span>, <span class="mono">commit confirmed 5</span>, <span class="mono">rollback 0</span> to discard, <span class="mono">exit</span> at the top to leave.</td></tr>
+  </table>
+  <p>The rules the skill enforces: read the prompt before every action; <span class="mono">configure
+  exclusive</span> rather than bare <span class="mono">configure</span>; show the user
+  <span class="mono">show | compare</span> before any commit; <span class="mono">commit confirmed</span>
+  for anything that can cut the path you are on, then a plain <span class="mono">commit</span> once
+  reachability is verified; <span class="mono">rollback 1</span> then <span class="mono">commit</span>
+  to undo. Everyday questions map to <span class="mono">show version</span>, <span class="mono">show
+  chassis hardware</span>, <span class="mono">show system alarms</span>, <span class="mono">show
+  interfaces terse</span>, <span class="mono">show interfaces descriptions</span>, <span class="mono">show
+  vlans</span>, <span class="mono">show lldp neighbors</span>, <span class="mono">show route</span>,
+  <span class="mono">show configuration | display set</span>, <span class="mono">show log messages |
+  last 50</span>. <span class="mono">set cli screen-length 0</span> once, or <span class="mono">| no-more</span>.</p>
+
+  <h3>ios-operating</h3>
+  <table>
+    <tr><th style="width:22%">Prompt</th><th style="width:22%">Mode</th><th>Move</th></tr>
+    <tr><td class="mono">Switch&gt;</td><td>User EXEC</td><td><span class="mono">enable</span> (may ask for a password: ask the user).</td></tr>
+    <tr><td class="mono">Switch#</td><td>Privileged EXEC</td><td>All <span class="mono">show</span>; <span class="mono">configure terminal</span> to edit; <span class="mono">disable</span> or <span class="mono">exit</span> to leave.</td></tr>
+    <tr><td class="mono">Switch(config)#</td><td>Configuration</td><td>Every line is live as typed. <span class="mono">end</span> back to <span class="mono">#</span>, then <span class="mono">write memory</span> to keep it.</td></tr>
+    <tr><td class="mono">rommon 1 &gt;</td><td>Boot monitor</td><td>The OS is not running. Stop and tell the user.</td></tr>
+  </table>
+  <p>IOS has no commit, so the discipline is different: <span class="mono">reload in 10</span> before
+  any change that could cut the path, verify, <span class="mono">reload cancel</span>, then
+  <span class="mono">write memory</span>. Undo a line with <span class="mono">no</span> in front of it;
+  IOS-XE with <span class="mono">archive</span> has <span class="mono">configure replace</span>.
+  Everyday questions map to <span class="mono">show version</span>, <span class="mono">show
+  inventory</span>, <span class="mono">show ip interface brief</span>, <span class="mono">show interfaces
+  status</span>, <span class="mono">show interfaces description</span>, <span class="mono">show vlan
+  brief</span>, <span class="mono">show mac address-table</span>, <span class="mono">show cdp
+  neighbors</span>, <span class="mono">show ip route</span>, <span class="mono">show running-config</span>,
+  <span class="mono">show logging | last 50</span>. <span class="mono">terminal length 0</span> once per
+  session.</p>
+  <div class="callout">
+    <div class="ct">What both skills refuse to do on their own</div>
+    <p>Commit, write, reload, erase, zeroize. Each needs the user's words in the conversation,
+    and the confirmed-commit or reload-timer safety net is the default for anything that can
+    sever the console's own path. In read-only mode the skills stay inside <span class="mono">show</span>
+    and the mode-changing words.</p>
+  </div>
+  <div class="callout">
+    <div class="ct">Verified on the EX2200</div>
+    <p>The Junos mode transitions in this chapter were run live on 15 September 2026: shell to
+    CLI, into <span class="mono">configure exclusive</span>, <span class="mono">show | compare</span>,
+    <span class="mono">rollback 0</span>, out, the show commands, and back to the shell, with
+    nothing committed. The IOS skill is written from the IOS command reference and has not yet met
+    a Cisco on this bench.</p>
+  </div>
+</div>
+
 <!-- ============ E · EXAMPLES ============ -->
 <div class="chapter" id="examples">
   <div class="eyebrow">Chapter E · At the bench</div>
@@ -709,7 +776,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong">Installers</td><td class="mono">GitHub Releases · SerialConsoleMCP-Setup.exe · SerialConsoleMCP-0.1.1.pkg</td></tr>
     <tr><td class="strong">PyPI</td><td class="mono">pypi.org/project/serial-console-mcp · uvx serial-console-mcp</td></tr>
     <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/ (server, presets, terminal, cat, civ, rotator) · tests/test_serial_console.py</td></tr>
-    <tr><td class="strong">Operating skill</td><td class="mono">skills/serial-console/SKILL.md</td></tr>
+    <tr><td class="strong">Operating skills</td><td class="mono">skills/serial-console · skills/junos-operating · skills/ios-operating (SKILL.md each)</td></tr>
     <tr><td class="strong">Live-port harness</td><td class="mono">_hosttest/run_live.py &lt;steps.json&gt;</td></tr>
     <tr><td class="strong">This guide's sources</td><td class="mono">docs/brand/ (HTML + CSS, WeasyPrint)</td></tr>
     <tr><td class="strong">Sibling servers</td><td class="mono">fldigi-mcp · wsjtx-mcp · n3fjp-mcp · mcp-host-bridge</td></tr>
