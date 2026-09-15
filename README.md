@@ -6,7 +6,7 @@
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/serial-console-mcp?label=pypi&cacheSeconds=3600)](https://pypi.org/project/serial-console-mcp/)
-&nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: experimental (0.1.1)**
+&nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: experimental (0.2.0)**
 
 This adds a few tools to **Claude Desktop** so you can talk to anything on a serial
 port — a network device's console/craft port (Juniper, Cisco, etc.), a radio,
@@ -43,26 +43,33 @@ interactive CLIs properly.
 
 | Tool | What it does |
 | --- | --- |
-| `list_serial_ports` | Enumerate ports with description and USB hardware id |
-| `connect` / `reconnect_last` / `disconnect` | Open a port. Defaults to 9600 8N1, no flow control; baud, data bits, parity, stop bits, RTS/CTS and XON/XOFF are all settable by asking. Remembers the last one |
-| `send_text` | Write an ASCII command with CR / LF / CRLF / no line ending. Write-only |
-| `send_hex` | Write raw bytes given as hex (Icom CI-V and other binary protocols) |
-| `read_until_prompt` | Return buffered output up to a literal or regex prompt, leaving the rest |
+| `list_serial_ports` | Enumerate ports with description and USB hardware id; marks ones open here |
+| `list_presets` | Usual settings per device family: Cisco/Juniper/Linux consoles, Kenwood/Elecraft/Yaesu CAT, Icom CI-V, rotators, Arduino, NMEA GPS |
+| `connect` / `reconnect_last` / `disconnect` | Open a port by name. Defaults 9600 8N1, no flow control; baud, data bits, parity, stop bits, RTS/CTS, XON/XOFF, line ending and prompt are all settable, or loaded from a preset. Several ports at once |
+| `send_text` / `send_hex` | Write an ASCII line (CR / LF / CRLF / none) or raw hex bytes. Write-only |
+| `read_until_prompt` | Return buffered output up to a literal or regex prompt, leaving the rest; `auto_reply` pages through `--More--` |
 | `read_available` | Return whatever has arrived, as text and hex |
-| `query_text` | Clear, send, then read until a prompt or until the line goes idle |
-| `clear_buffer` / `status` | Housekeeping |
+| `query_text` | Clear, send, then read until the prompt or until the line goes idle |
+| `expect` | A scripted list of send-and-wait steps in one call: logins, command sequences |
+| `set_lines` / `pulse_line` / `send_break` | Drive DTR and RTS (PTT, Arduino reset), send BREAK |
+| `capture_start` / `capture_stop` / `get_transcript` | Log a session to a file (raw or timestamped TX/RX); re-read the rolling transcript |
+| `port_in_use_by` / `detect_baud` | Which program holds a port; which baud rate produces readable text |
+| `civ_build` / `civ_parse` / `civ_freq` | Icom CI-V frames: build, decode (echo vs reply, BCD frequency, mode, PTT), convert |
+| `clear_buffer` / `status` | Housekeeping; status shows every open port with control-line states |
 
-One port is open at a time. The receive buffer is capped at 4 MB; if a device
-streams for hours unread, the oldest bytes are dropped and `status` says how many.
+Ports are opened by name ("rig", "rotator"); tools default to the most recently
+used one. The receive buffer is capped at 4 MB per port; if a device streams for
+hours unread, the oldest bytes are dropped and `status` says how many.
 
-## The Field Guide
+### Environment variables
 
-[serial-console-mcp Field Guide (PDF)](docs/serial-console-mcp%20Field%20Guide.pdf) is the
-operator's manual: what each tool does, every connection setting said in plain
-language, the console rules, a per-device playbook (craft ports, text CAT,
-Icom CI-V, rotators and microcontrollers), four worked sessions, and a
-troubleshooting table. Source is `docs/brand/` (HTML + CSS, rendered with
-WeasyPrint).
+| Variable | Effect |
+| --- | --- |
+| `SERIAL_CONSOLE_READ_ONLY=1` | Refuse writes except read-style commands (`show`, `ID;`, CI-V reads) and refuse control-line changes |
+| `SERIAL_CONSOLE_ALLOW=<regex>` | Override the read-only allowlist |
+| `SERIAL_CONSOLE_IDLE_MINUTES=15` | Auto-close a port idle that long (default: never) |
+
+Set them in the server's entry in `claude_desktop_config.json` under `"env"`.
 
 ## Installing
 
@@ -124,6 +131,12 @@ Plain-English requests work. Some examples:
 - "List my serial ports."
 - "Connect to the console on /dev/cu.usbserial-10 at 9600 baud."
 - "Connect to /dev/cu.BLTH at 38400, 8 data bits, no parity, 1 stop bit, XON/XOFF flow control."
+- "Connect to the Kenwood with the kenwood-cat preset and call it rig; connect the rotator on the other port."
+- "Log in as admin and run show version" (one `expect` call: return, login, password, command).
+- "What baud rate is this thing?" (`detect_baud`).
+- "Key the rig for two seconds" (`pulse_line("RTS", 2000)`, after you confirm).
+- "Ask the IC-7300 for its frequency" (`civ_build`, `send_hex`, `read_available`, `civ_parse`).
+- "Record this console session to a file."
 - "Reconnect to the same port as last time." (it remembers)
 - "Send a return, then read until the login prompt."
 - "Log in as admin and run `show interfaces terse`, then show me all of it."

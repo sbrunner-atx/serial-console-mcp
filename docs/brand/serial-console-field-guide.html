@@ -22,21 +22,22 @@
     <h1>The Serial<br>Console</h1>
     <div class="rule"></div>
     <p class="blurb">A field guide to <strong>serial-console-mcp</strong> — how an agent opens a
-    craft port, a CAT radio, a rotator or a microcontroller over a serial cable, says the right
-    line ending, reads until the prompt instead of guessing, and hands the port back cleanly.
-    Everything a terminal program knows, explained for the operator who would rather ask.</p>
+    craft port, a CAT radio, a rotator or a microcontroller over a serial cable, picks the right
+    preset, says the right line ending, reads until the prompt instead of guessing, keys a line
+    when asked, and hands the port back cleanly. Everything a terminal program knows, explained
+    for the operator who would rather ask.</p>
   </div>
   <div class="statband">
-    <div class="tagline">FIELD GUIDE&nbsp;&nbsp;·&nbsp;&nbsp;VERSION 0.1&nbsp;&nbsp;·&nbsp;&nbsp;SEPTEMBER 2026</div>
+    <div class="tagline">FIELD GUIDE&nbsp;&nbsp;·&nbsp;&nbsp;VERSION 0.2&nbsp;&nbsp;·&nbsp;&nbsp;SEPTEMBER 2026</div>
     <div class="stats">
-      <div class="stat"><div class="n">11</div><div class="l">Tools</div></div>
-      <div class="stat"><div class="n">7</div><div class="l">Connection<br>settings</div></div>
-      <div class="stat"><div class="n">4</div><div class="l">Device<br>families</div></div>
+      <div class="stat"><div class="n">24</div><div class="l">Tools</div></div>
+      <div class="stat"><div class="n">10</div><div class="l">Device<br>presets</div></div>
+      <div class="stat"><div class="n">6</div><div class="l">Console<br>rules</div></div>
       <div class="stat"><div class="n">4</div><div class="l">Worked<br>sessions</div></div>
     </div>
     <div class="coverfoot">
       <span>© 2026 STEFAN BRUNNER · AE5VG</span>
-      <span>EXPERIMENTAL RELEASE 0.1.1 · MIT LICENSE</span>
+      <span>EXPERIMENTAL RELEASE 0.2.0 · MIT LICENSE</span>
     </div>
   </div>
 </div>
@@ -57,6 +58,7 @@
   <div class="toc-row"><span class="tno">01</span><span class="tt"><a href="#settings">Connection settings — the Quick Connect dialog, in words</a></span><span class="leader"></span><span class="tp"><a href="#settings"></a></span></div>
   <div class="toc-row"><span class="tno">02</span><span class="tt"><a href="#standard">The console standard</a></span><span class="leader"></span><span class="tp"><a href="#standard"></a></span></div>
   <div class="toc-row"><span class="tno">03</span><span class="tt"><a href="#devices">The device playbook</a></span><span class="leader"></span><span class="tp"><a href="#devices"></a></span></div>
+  <div class="toc-row"><span class="tno">04</span><span class="tt"><a href="#shack">The shack — several ports, control lines, scripts, capture</a></span><span class="leader"></span><span class="tp"><a href="#shack"></a></span></div>
 
   <div class="toc-group">At the bench</div>
   <div class="toc-row"><span class="tno">E</span><span class="tt"><a href="#examples">Worked sessions</a></span><span class="leader"></span><span class="tp"><a href="#examples"></a></span></div>
@@ -72,21 +74,20 @@
   <div class="eyebrow">Chapter A · Before you start</div>
   <h2>The Tools at a Glance</h2>
   <div class="h2rule"></div>
-  <p class="lead">One server, eleven tools, one open port at a time. The agent picks the tool;
-  you say what you want in plain language.</p>
+  <p class="lead">One server, twenty-four tools, as many open ports as the shack has cables.
+  The agent picks the tool; you say what you want in plain language.</p>
   <table class="glance">
-    <tr><th style="width:26%">Tool</th><th style="width:40%">What it does</th><th>When the agent reaches for it</th></tr>
-    <tr><td class="strong mono">list_serial_ports</td><td>Every port the computer can see, with description and USB hardware id.</td><td class="get">First, whenever a port name is unknown or a connect fails</td></tr>
-    <tr><td class="strong mono">connect</td><td>Open a port with baud, data bits, parity, stop bits and flow control. Starts the background reader.</td><td class="get">&ldquo;Connect to the console at 9600&rdquo;</td></tr>
-    <tr><td class="strong mono">reconnect_last</td><td>Reopen the last port with the same settings, remembered across sessions.</td><td class="get">Start of a new chat</td></tr>
-    <tr><td class="strong mono">send_text</td><td>Write an ASCII line with a chosen line ending. Writes only; never reads.</td><td class="get">Any command, login, or bare return</td></tr>
-    <tr><td class="strong mono">send_hex</td><td>Write raw bytes given as hex. Writes only.</td><td class="get">Icom CI-V and other binary protocols</td></tr>
-    <tr><td class="strong mono">read_until_prompt</td><td>Return buffered output up to a prompt, literal or regex; leaves the rest for the next read.</td><td class="get">Every interactive CLI reply</td></tr>
-    <tr><td class="strong mono">read_available</td><td>Return whatever has arrived, as text and hex.</td><td class="get">Binary replies, streaming or unsolicited output</td></tr>
-    <tr><td class="strong mono">query_text</td><td>Clear, send, then read until a prompt or until the line goes quiet.</td><td class="get">One-shot CAT queries such as <span class="mono">ID;</span></td></tr>
-    <tr><td class="strong mono">clear_buffer</td><td>Discard buffered receive data.</td><td class="get">Right before a command whose reply must start clean</td></tr>
-    <tr><td class="strong mono">status</td><td>Port, settings, reader state, bytes buffered.</td><td class="get">Pre-flight check; after anything odd</td></tr>
-    <tr><td class="strong mono">disconnect</td><td>Close the port and free it for other programs.</td><td class="get">End of session, or before starting a terminal program</td></tr>
+    <tr><th style="width:30%">Tools</th><th style="width:40%">What they do</th><th>When the agent reaches for them</th></tr>
+    <tr><td class="strong mono">list_serial_ports · list_presets</td><td>Every port the computer sees, marked if open here; the usual settings for ten device families.</td><td class="get">First, whenever a port or its settings are unknown</td></tr>
+    <tr><td class="strong mono">connect · reconnect_last · disconnect</td><td>Open a port by name with baud, framing, flow control, line ending and prompt, or from a preset. Several at once. Remembered across sessions.</td><td class="get">&ldquo;Connect the Kenwood as rig and the rotator on the other port&rdquo;</td></tr>
+    <tr><td class="strong mono">send_text · send_hex</td><td>Write an ASCII line or raw bytes. Writes only; never reads.</td><td class="get">Any command, login, bare return, CI-V frame</td></tr>
+    <tr><td class="strong mono">read_until_prompt · read_available · query_text</td><td>Return buffered output up to a prompt (leaving the rest), or whatever has arrived, or clear-send-read in one.</td><td class="get">Every reply</td></tr>
+    <tr><td class="strong mono">expect</td><td>A scripted list of send-and-wait steps in one call, with automatic replies to pagers.</td><td class="get">Logins, multi-step command sequences</td></tr>
+    <tr><td class="strong mono">set_lines · pulse_line · send_break</td><td>Drive DTR and RTS, send BREAK; status shows CTS/DSR/CD/RI.</td><td class="get">Key a rig's PTT, reset an Arduino, interrupt a boot</td></tr>
+    <tr><td class="strong mono">capture_start · capture_stop · get_transcript</td><td>Log a session to a file, raw or timestamped; re-read the rolling transcript.</td><td class="get">&ldquo;Record this console session&rdquo;</td></tr>
+    <tr><td class="strong mono">port_in_use_by · detect_baud</td><td>Which program holds a port; which baud rate produces readable text.</td><td class="get">&ldquo;It says in use&rdquo; · &ldquo;I don't know the rate&rdquo;</td></tr>
+    <tr><td class="strong mono">civ_build · civ_parse · civ_freq</td><td>Icom CI-V frames: build, decode (echo vs reply, BCD frequency, mode, PTT), convert.</td><td class="get">Any Icom</td></tr>
+    <tr><td class="strong mono">clear_buffer · status</td><td>Housekeeping; status shows every open port, its lines, buffer and capture.</td><td class="get">Pre-flight; after anything odd</td></tr>
   </table>
   <div class="callout">
     <div class="ct">Who reads this guide</div>
@@ -267,6 +268,22 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   agent repeats the settings back in the connect reply, so a misheard baud rate is visible before
   the first command goes out.</p>
 
+  <h3>Presets: the whole dialog in one word</h3>
+  <p><code>connect(preset="kenwood-cat")</code> loads a family's usual settings, including two
+  the dialog never asks for: the <b>line ending</b> the device expects and the <b>prompt</b> that
+  ends its replies. Anything you say explicitly overrides the preset. Ten presets ship:
+  <span class="mono">cisco-console</span>, <span class="mono">juniper-craft</span>,
+  <span class="mono">linux-console</span>, <span class="mono">kenwood-cat</span>,
+  <span class="mono">elecraft-cat</span>, <span class="mono">yaesu-cat</span>,
+  <span class="mono">icom-civ</span>, <span class="mono">yaesu-rotator</span>,
+  <span class="mono">arduino</span>, <span class="mono">nmea-gps</span>. Ask
+  <i>&ldquo;list the presets&rdquo;</i> to see each one's values and caveats. They are factory
+  defaults; the device's menu wins.</p>
+  <p>Don't know the rate at all? <i>&ldquo;What baud is this thing?&rdquo;</i> runs
+  <code>detect_baud</code>: it tries the common rates, sends a return (or a command you name, such
+  as <span class="mono">ID;</span> for a Kenwood), and ranks the rates by how readable the reply
+  is.</p>
+
   <h3>Flow control, the two lines that are usually wrong</h3>
   <ul class="tight">
     <li><b>Leave both off unless the manual says otherwise.</b> Consoles, CAT ports and
@@ -280,16 +297,18 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   </ul>
 
   <h3>Remembered across sessions</h3>
-  <p>Every successful connect writes port and settings, flow control included, to a small file
-  in your user profile. <i>&ldquo;Reconnect to the same port as last time&rdquo;</i> reads it
-  back. <code>status</code> shows the remembered port when nothing is open.</p>
+  <p>Every successful connect writes the connection, by name, with all its settings, preset and
+  prompt, to a small file in your user profile. <i>&ldquo;Reconnect to the rig&rdquo;</i> or
+  <i>&ldquo;reconnect to the same port as last time&rdquo;</i> reads it back. <code>status</code>
+  shows what is remembered when nothing is open.</p>
   <div class="callout">
     <div class="ct">Line ending is a send setting, not a port setting</div>
     <p>The dialog doesn't ask because a terminal sends whatever you type. Here it matters:
     <code>send_text</code> appends <b>CR</b> (most radios, rotators), <b>LF</b> (Unix-style
     consoles, Arduino), <b>CRLF</b>, or <b>nothing</b> (Kenwood-style CAT ends in
-    <span class="mono">;</span>). Say <i>&ldquo;this device wants LF&rdquo;</i> once and the agent
-    keeps it for the session.</p>
+    <span class="mono">;</span>). Say <i>&ldquo;this device wants LF&rdquo;</i> once: it is stored
+    on the connection, as is the prompt, so every later send and read uses it without being
+    told.</p>
   </div>
 </div>
 
@@ -310,7 +329,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
       <span class="mono">&ldquo;# &rdquo;</span> is safe; a bare <span class="mono">&ldquo;#&rdquo;</span> matches the first
       <span class="mono">#</span> in a banner or in <span class="mono">show run | include #</span>.
       A regex such as <span class="mono">[\w.-]+[#&gt;] ?$</span> handles hostnames that change
-      after <span class="mono">configure</span>.</div></div>
+      after <span class="mono">configure</span>. Set the prompt once on connect (or let the preset)
+      and every read uses it.</div></div>
     <div class="item"><div class="no">3</div><div class="bd"><b>Clear before a command whose reply must be clean.</b>
       Syslog, interface flaps and a previous timed-out read leave bytes in the buffer.
       <code>send_text(…, clear_buffer_first=true)</code> or <code>query_text</code> discard them
@@ -365,6 +385,72 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   </div>
 </div>
 
+<!-- ============ 04 · SHACK ============ -->
+<div class="chapter" id="shack">
+  <div class="eyebrow">Chapter 04 · The shack</div>
+  <h2>Several Ports, Control Lines, Scripts, Capture</h2>
+  <div class="h2rule"></div>
+  <p class="lead">A station is more than one cable. This chapter is what 0.2 adds on top of the
+  console model: naming ports, driving the lines that key and reset, scripting a login in one
+  call, and keeping a record.</p>
+
+  <h3>Several ports at once</h3>
+  <p>Every connection has a name: <i>&ldquo;connect the Kenwood as <b>rig</b>, then the rotator
+  on the other port as <b>rotator</b>.&rdquo;</i> Tools act on the most recently used connection
+  unless you say otherwise: <i>&ldquo;ask the rig for its frequency, then turn the rotator to
+  180.&rdquo;</i> <code>status</code> lists all of them and marks the current one.
+  <i>&ldquo;Disconnect everything&rdquo;</i> closes them all. Connecting to a port that is already
+  open replaces that connection; reusing a name for a different port is refused, so
+  <span class="mono">rig</span> can never silently become the amplifier.</p>
+
+  <h3>Control lines</h3>
+  <table>
+    <tr><th style="width:22%">Tool</th><th style="width:38%">What it does</th><th>Typical use</th></tr>
+    <tr><td class="strong mono">set_lines</td><td>Set DTR and/or RTS and hold them</td><td>Hold an Arduino in reset; assert PTT for as long as the user says</td></tr>
+    <tr><td class="strong mono">pulse_line</td><td>Drive DTR or RTS to a level for N ms, then restore it, always</td><td>Reset a board (DTR low, 100 ms); key a rig for a timed transmission (RTS, 2000 ms)</td></tr>
+    <tr><td class="strong mono">send_break</td><td>Hold TX low for N ms</td><td>Enter ROMMON, interrupt a boot</td></tr>
+    <tr><td class="strong mono">status</td><td>Shows CTS, DSR, CD, RI, DTR, RTS</td><td>&ldquo;Is the cable wired for flow control?&rdquo;</td></tr>
+  </table>
+  <div class="callout warn">
+    <div class="ct">A line can be a transmitter</div>
+    <p>Many rig interfaces key PTT from RTS or DTR. Asking the agent to pulse a line on such a
+    port is a transmission: the skill tells it to confirm first, keep pulses short, and never
+    leave PTT asserted with <code>set_lines</code> unless you said so. Read-only mode refuses
+    these tools outright.</p>
+  </div>
+
+  <h3>Scripting with expect</h3>
+  <p>A login is four round trips: return, username, password, first command. <code>expect</code>
+  runs them as one call, each step a send and the prompt to wait for, and returns every step's
+  output. A step can also just wait, or just send. <code>auto_reply</code> answers pagers on the
+  way: <span class="mono">{"--More--": " "}</span> turns a paged <span class="mono">show run</span>
+  into one result. If a step's prompt never shows, the sequence stops there and says so, with
+  whatever arrived.</p>
+  <pre>expect(steps=[
+  {"send": "",             "expect": "login: "},
+  {"send": "admin",        "expect": "Password:"},
+  {"send": "&lt;password&gt;",   "expect": "&gt; "},
+  {"send": "show version", "expect": "&gt; ", "clear_first": true}
+])</pre>
+
+  <h3>Capture and transcript</h3>
+  <p><i>&ldquo;Record this session&rdquo;</i> starts a capture: <b>raw</b> writes received bytes
+  exactly as they arrive, a terminal log; <b>annotated</b> writes timestamped lines marked TX or
+  RX, which is what you want when debugging a protocol. <code>capture_stop</code> reports the
+  file. Independently, the last 256 KB received on every connection is kept as a transcript, so
+  <i>&ldquo;show me what the router printed earlier&rdquo;</i> works even after those bytes were
+  consumed by a read.</p>
+
+  <h3>Read-only mode and idle auto-close</h3>
+  <p>Two environment variables in the server's config entry: <code>SERIAL_CONSOLE_READ_ONLY=1</code>
+  makes the server refuse anything but read-style commands (<span class="mono">show</span>,
+  <span class="mono">display</span>, two-letter CAT reads such as <span class="mono">ID;</span>,
+  CI-V read frames) and refuse control-line changes; it is the way to let a cautious admin try
+  the tool on a production console. <code>SERIAL_CONSOLE_IDLE_MINUTES=15</code> closes a port
+  nobody has used for that long, so a forgotten connection stops blocking WSJT-X. Both are off
+  by default.</p>
+</div>
+
 <!-- ============ E · EXAMPLES ============ -->
 <div class="chapter" id="examples">
   <div class="eyebrow">Chapter E · At the bench</div>
@@ -378,16 +464,14 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <div class="qbody">
       <div class="xline note"><span class="dir"></span><span class="txt">You: &ldquo;Connect to the CP210x port at 9600, log in as admin, and show me the version.&rdquo;</span></div>
       <div class="xline tx"><span class="dir">TOOL</span><span class="txt">list_serial_ports → /dev/cu.SLAB_USBtoUART  —  CP2102N USB to UART Bridge</span></div>
-      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.SLAB_USBtoUART", baud=9600)  → Connected … (8N1, flow control none)</span></div>
-      <div class="xline tx"><span class="dir">SEND</span><span class="txt">send_text("", line_ending="LF", clear_buffer_first=true)</span></div>
-      <div class="xline rx"><span class="dir">READ</span><span class="txt">read_until_prompt("login: ") → Matched after 41 bytes:\n\nr1 (ttyd0)\n\nlogin: </span></div>
-      <div class="xline tx"><span class="dir">SEND</span><span class="txt">send_text("admin", line_ending="LF")</span></div>
-      <div class="xline rx"><span class="dir">READ</span><span class="txt">read_until_prompt("Password:") → admin\nPassword:</span></div>
-      <div class="xline note"><span class="dir"></span><span class="txt">The agent asks you for the password rather than inventing one; you approve the send like any other.</span></div>
-      <div class="xline tx"><span class="dir">SEND</span><span class="txt">send_text("show version", line_ending="LF", clear_buffer_first=true)</span></div>
-      <div class="xline rx"><span class="dir">READ</span><span class="txt">read_until_prompt("&gt; ") → show version\nHostname: r1\nModel: srx320\nJunos: 21.4R3-S4.15\n…\nadmin@r1&gt; </span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.SLAB_USBtoUART", preset="juniper-craft", name="r1")  → Connected 'r1' … 9600 (8N1, flow control none). Line ending CR, prompt '[#&gt;%] ?$' regex.</span></div>
+      <div class="xline note"><span class="dir"></span><span class="txt">The agent asks you for the password rather than inventing one; you approve the expect call, which shows every step, like any other.</span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">expect(steps=[{send:"", expect:"login: "}, {send:"admin", expect:"Password:"}, {send:"&lt;pw&gt;", expect:"&gt; "}, {send:"show version", expect:"&gt; ", clear_first:true}])</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">Step 1: sent ''+CR; matched 'login: ' after 41 bytes: r1 (ttyd0) login:</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">Step 2: sent 'admin'+CR; matched 'Password:' … Step 3: matched '&gt; '</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">Step 4: sent 'show version'+CR; matched '&gt; ' after 212 bytes:\nHostname: r1\nModel: srx320\nJunos: 21.4R3-S4.15\n…\nadmin@r1&gt; </span></div>
     </div>
-    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;A bare LF drew a fresh prompt; each read named the exact next prompt; the buffer was cleared before the command so the reply began at the echo.</div>
+    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;The preset supplied CR and the prompt regex; each step named the exact next prompt; clear_first made the last reply begin at the echo. One approval, one round trip.</div>
   </div>
 
   <div class="qso">
@@ -440,11 +524,13 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <table>
     <tr><th style="width:30%">Symptom</th><th style="width:34%">Most likely cause</th><th>What to say</th></tr>
     <tr><td class="strong">No serial ports found</td><td>Charge-only USB cable, missing driver, device off. Windows: nothing under Ports (COM &amp; LPT).</td><td class="mono">Swap the cable, then &ldquo;list the ports again&rdquo;</td></tr>
-    <tr><td class="strong">Could not open … already in use</td><td>Another program holds the port: terminal, WSJT-X, logger, IDE serial monitor.</td><td class="mono">Close it, then &ldquo;try connecting again&rdquo;</td></tr>
+    <tr><td class="strong">Could not open … already in use</td><td>Another program holds the port. On a Mac or Linux the message now names it (<span class="mono">port_in_use_by</span>).</td><td class="mono">Close it, then &ldquo;try connecting again&rdquo;</td></tr>
     <tr><td class="strong">Port name wasn't found</td><td>Names change when you replug; the remembered port is stale.</td><td class="mono">&ldquo;List the ports and connect to the right one&rdquo;</td></tr>
-    <tr><td class="strong">Garbage characters, <span class="mono">�</span>, box drawing</td><td>Wrong baud rate. Occasionally wrong data bits or parity.</td><td class="mono">&ldquo;Reconnect at 115200&rdquo; (or the rig's menu value)</td></tr>
+    <tr><td class="strong">Garbage characters, <span class="mono">�</span>, box drawing</td><td>Wrong baud rate. Occasionally wrong data bits or parity.</td><td class="mono">&ldquo;Detect the baud rate&rdquo; · &ldquo;reconnect at 115200&rdquo;</td></tr>
     <tr><td class="strong">Echo comes back, no reply</td><td>Wrong line ending for this device, or a CLI that needs a return to wake.</td><td class="mono">&ldquo;Send a return first&rdquo; · &ldquo;use LF instead of CR&rdquo;</td></tr>
-    <tr><td class="strong">Prompt not seen, partial output returned</td><td>The prompt string doesn't match: missing trailing space, hostname changed, or <span class="mono">--More--</span> paging.</td><td class="mono">&ldquo;The prompt is admin@r1&gt; with a space&rdquo; · &ldquo;turn off paging&rdquo;</td></tr>
+    <tr><td class="strong">Prompt not seen, partial output returned</td><td>The prompt string doesn't match: missing trailing space, hostname changed, or <span class="mono">--More--</span> paging.</td><td class="mono">&ldquo;The prompt is admin@r1&gt; with a space&rdquo; · &ldquo;answer --More-- with a space&rdquo;</td></tr>
+    <tr><td class="strong">Read-only mode refused to send</td><td><span class="mono">SERIAL_CONSOLE_READ_ONLY</span> is set and the command isn't a read.</td><td class="mono">Unset it in the config entry, or widen SERIAL_CONSOLE_ALLOW</td></tr>
+    <tr><td class="strong">Wrong device answered</td><td>Several ports open; the command went to the current one.</td><td class="mono">&ldquo;Send that to the rotator&rdquo; · &ldquo;what's the status?&rdquo;</td></tr>
     <tr><td class="strong">Write failed: Write timeout</td><td>RTS/CTS is on and the cable doesn't carry CTS.</td><td class="mono">&ldquo;Reconnect without hardware flow control&rdquo;</td></tr>
     <tr><td class="strong">Background reader has stopped</td><td>Adapter unplugged or port taken by another program mid-session.</td><td class="mono">&ldquo;Disconnect and reconnect&rdquo;</td></tr>
     <tr><td class="strong">Claude says it has no serial tools</td><td>Claude Desktop wasn't fully quit after install, or the config entry is missing.</td><td class="mono">Quit with ⌘Q / tray Quit, reopen, new chat</td></tr>
@@ -463,27 +549,42 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <div class="eyebrow">Chapter G · Reference</div>
   <h2>Tool Reference</h2>
   <div class="h2rule"></div>
-  <p class="lead">Parameters as the agent sees them. Defaults in brackets.</p>
+  <p class="lead">Parameters as the agent sees them. Defaults in brackets. Every tool that acts
+  on a port takes <span class="mono">connection</span> [current].</p>
   <table>
-    <tr><th style="width:24%">Tool</th><th style="width:44%">Parameters</th><th>Returns</th></tr>
-    <tr><td class="strong mono">list_serial_ports</td><td>none</td><td>One line per port: device, description, hardware id</td></tr>
-    <tr><td class="strong mono">connect</td><td class="mono">port · baud [9600] · bytesize [8] · parity N|E|O [N] · stopbits 1|1.5|2 [1] · rtscts [false] · xonxoff [false]</td><td>Settings echoed back, or the reason it failed with a hint</td></tr>
-    <tr><td class="strong mono">reconnect_last</td><td>none</td><td>Same as connect, using the remembered settings</td></tr>
-    <tr><td class="strong mono">send_text</td><td class="mono">data · line_ending CR|CRLF|LF|NONE [CR] · clear_buffer_first [false]</td><td>Byte count sent</td></tr>
+    <tr><th style="width:22%">Tool</th><th style="width:48%">Parameters</th><th>Returns</th></tr>
+    <tr><td class="strong mono">list_serial_ports</td><td>none</td><td>Ports with description, hardware id, open-here marker</td></tr>
+    <tr><td class="strong mono">list_presets</td><td>none</td><td>Each preset's settings and notes</td></tr>
+    <tr><td class="strong mono">connect</td><td class="mono">port · preset · name · baud [9600] · bytesize [8] · parity N|E|O [N] · stopbits [1] · rtscts [off] · xonxoff [off] · line_ending [CR] · prompt · prompt_regex</td><td>Settings echoed back, preset notes, other open ports</td></tr>
+    <tr><td class="strong mono">reconnect_last</td><td class="mono">name [most recent]</td><td>Same as connect, from the remembered settings</td></tr>
+    <tr><td class="strong mono">disconnect</td><td class="mono">connection · all_connections [false]</td><td>Confirmation; always releases the port</td></tr>
+    <tr><td class="strong mono">send_text</td><td class="mono">data · line_ending [connection's] · clear_buffer_first [false]</td><td>Byte count sent</td></tr>
     <tr><td class="strong mono">send_hex</td><td class="mono">hex_bytes · clear_buffer_first [false]</td><td>Bytes sent, as hex</td></tr>
-    <tr><td class="strong mono">read_until_prompt</td><td class="mono">prompt [#] · timeout [10 s] · regex [false]</td><td>Output through the prompt; on timeout, whatever arrived</td></tr>
+    <tr><td class="strong mono">read_until_prompt</td><td class="mono">prompt [connection's, else ends-with #&gt;$%] · timeout [10 s] · regex · auto_reply</td><td>Output through the prompt; on timeout, whatever arrived</td></tr>
     <tr><td class="strong mono">read_available</td><td class="mono">read_timeout [1 s]</td><td>Bytes as text and hex, after the line goes quiet</td></tr>
-    <tr><td class="strong mono">query_text</td><td class="mono">data · line_ending [CR] · prompt [none] · read_timeout [5 s]</td><td>The reply; with a prompt, same as read_until_prompt</td></tr>
-    <tr><td class="strong mono">clear_buffer</td><td>none</td><td>Number of bytes discarded</td></tr>
-    <tr><td class="strong mono">status</td><td>none</td><td>Port, settings, flow control, reader state, bytes buffered and dropped</td></tr>
-    <tr><td class="strong mono">disconnect</td><td>none</td><td>Confirmation; always releases the port</td></tr>
+    <tr><td class="strong mono">query_text</td><td class="mono">data · line_ending · prompt [connection's; "" = idle] · read_timeout [5 s]</td><td>The reply</td></tr>
+    <tr><td class="strong mono">expect</td><td class="mono">steps [{send, send_hex, line_ending, expect, regex, timeout, clear_first}] · auto_reply · stop_on_timeout [true]</td><td>Each step's result</td></tr>
+    <tr><td class="strong mono">clear_buffer</td><td>none</td><td>Bytes discarded</td></tr>
+    <tr><td class="strong mono">status</td><td>none</td><td>Every open port: settings, reader, buffer, lines, capture; or what is remembered</td></tr>
+    <tr><td class="strong mono">set_lines</td><td class="mono">dtr · rts</td><td>Resulting DTR/RTS</td></tr>
+    <tr><td class="strong mono">pulse_line</td><td class="mono">line DTR|RTS · ms [100] · level [true]</td><td>Confirmation, line restored</td></tr>
+    <tr><td class="strong mono">send_break</td><td class="mono">ms [250]</td><td>Confirmation</td></tr>
+    <tr><td class="strong mono">capture_start</td><td class="mono">path [auto] · format raw|annotated [raw]</td><td>The file being written</td></tr>
+    <tr><td class="strong mono">capture_stop</td><td>none</td><td>File and bytes written</td></tr>
+    <tr><td class="strong mono">get_transcript</td><td class="mono">last_bytes [4000]</td><td>Tail of everything received (rolling 256 KB)</td></tr>
+    <tr><td class="strong mono">port_in_use_by</td><td class="mono">port</td><td>Process holding it (macOS/Linux)</td></tr>
+    <tr><td class="strong mono">detect_baud</td><td class="mono">port · probe [""] · probe_line_ending [CR] · candidates · settle [0.5 s]</td><td>Rates ranked by readable reply, best guess</td></tr>
+    <tr><td class="strong mono">civ_build</td><td class="mono">command · data · rig [94] · controller [E0]</td><td>Frame as hex, with its meaning</td></tr>
+    <tr><td class="strong mono">civ_parse</td><td class="mono">hex_bytes · controller [E0]</td><td>Each frame decoded: echo or reply, frequency, mode, OK/NG, PTT</td></tr>
+    <tr><td class="strong mono">civ_freq</td><td class="mono">mhz | bcd_hex</td><td>The other representation</td></tr>
   </table>
   <h3>Behaviour worth knowing</h3>
   <ul class="tight">
     <li><b>Non-ASCII text</b> in <code>send_text</code> is sent as <span class="mono">?</span>; use <code>send_hex</code> for raw bytes.</li>
     <li><b>Display decoding</b> is UTF-8 with replacement characters; prompt matching is byte-exact, so binary noise before a prompt does not shift the match.</li>
-    <li><b>Write timeout</b> is two seconds; <b>reader poll</b> is a tenth of a second; <b>idle settle</b> for prompt-less reads is 150 ms.</li>
-    <li><b>Remembered connection</b> lives at <span class="mono">~/Library/Application Support/serial-console-mcp/last_connection.json</span> (Mac), <span class="mono">%APPDATA%\serial-console-mcp\</span> (Windows), <span class="mono">~/.config/serial-console-mcp/</span> (Linux).</li>
+    <li><b>Write timeout</b> is two seconds; <b>reader poll</b> is a tenth of a second; <b>idle settle</b> for prompt-less reads is 150 ms; the <b>receive buffer</b> holds 4 MB per port and the <b>transcript</b> 256 KB.</li>
+    <li><b>Remembered connections</b> live in <span class="mono">last_connection.json</span> under <span class="mono">~/Library/Application Support/serial-console-mcp/</span> (Mac), <span class="mono">%APPDATA%\serial-console-mcp\</span> (Windows), <span class="mono">~/.config/serial-console-mcp/</span> (Linux); auto-named captures go in a <span class="mono">captures</span> folder beside it.</li>
+    <li><b>The operating skill</b> in <span class="mono">skills/serial-console/SKILL.md</span> carries this guide's rules for the agent.</li>
   </ul>
 </div>
 
@@ -492,11 +593,11 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <div class="eyebrow">Chapter H · Reference</div>
   <h2>About &amp; Provenance</h2>
   <div class="h2rule"></div>
-  <p class="lead">This is an experimental 0.1.1. The guide says what the server does and what
+  <p class="lead">This is an experimental 0.2.0. The guide says what the server does and what
   has been verified; it does not claim more.</p>
   <p>serial-console-mcp began as a generic console tool for network craft ports and radio gear
   and was rewritten for this release around the background-reader model in chapter D. The
-  0.1.1 code is verified by a 37-case test suite driving a simulated serial port, by a live
+  0.2.0 code is verified by a 50-case test suite driving a simulated serial port, by a live
   MCP transport handshake, and by continuous integration on Linux, macOS and Windows. The
   worked sessions in chapter E are representative walk-throughs of the tool flow, not
   recordings from hardware; a live-port pass is the next milestone, and this guide will say so
@@ -506,7 +607,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong">serial-console-mcp</td><td class="mono">github.com/sbrunner-atx/serial-console-mcp</td></tr>
     <tr><td class="strong">Installers</td><td class="mono">GitHub Releases · SerialConsoleMCP-Setup.exe · SerialConsoleMCP-0.1.1.pkg</td></tr>
     <tr><td class="strong">PyPI</td><td class="mono">pypi.org/project/serial-console-mcp · uvx serial-console-mcp</td></tr>
-    <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/server.py · tests/test_serial_console.py</td></tr>
+    <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/ (server, presets, civ) · tests/test_serial_console.py</td></tr>
+    <tr><td class="strong">Operating skill</td><td class="mono">skills/serial-console/SKILL.md</td></tr>
     <tr><td class="strong">Live-port harness</td><td class="mono">_hosttest/run_live.py &lt;steps.json&gt;</td></tr>
     <tr><td class="strong">This guide's sources</td><td class="mono">docs/brand/ (HTML + CSS, WeasyPrint)</td></tr>
     <tr><td class="strong">Sibling servers</td><td class="mono">fldigi-mcp · wsjtx-mcp · n3fjp-mcp · mcp-host-bridge</td></tr>
