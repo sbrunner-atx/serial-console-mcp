@@ -17,7 +17,7 @@ python3 -m venv .venv
 # shellcheck disable=SC1091
 source .venv/bin/activate
 pip install --quiet ".[freeze]"
-pyinstaller --onefile --name "$APP_NAME" --collect-all mcp --collect-all serial_console_mcp packaging/entry.py
+pyinstaller --onefile --name "$APP_NAME" --collect-all mcp --collect-all serial_console_mcp --collect-all pyte packaging/entry.py
 
 # Sign the Mach-O with hardened runtime (required for notarization).
 if [ -n "${SIGN_IDENTITY_APP:-}" ]; then

@@ -39,7 +39,7 @@ wrong home and silently does nothing. Both installers correct for this:
 ```
 python -m venv .venv && .venv\Scripts\activate
 pip install ".[freeze]"
-pyinstaller --onefile --name serial-console-mcp --collect-all mcp --collect-all serial_console_mcp packaging/entry.py
+pyinstaller --onefile --name serial-console-mcp --collect-all mcp --collect-all serial_console_mcp --collect-all pyte packaging/entry.py
 ```
 Then compile `installer.iss` with Inno Setup (free). Output:
 `Output\SerialConsoleMCP-Setup.exe`. Edit `AppPublisher` (your name/callsign) and,

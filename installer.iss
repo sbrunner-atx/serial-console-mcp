@@ -1,5 +1,5 @@
 ; Inno Setup script for Serial Console MCP (Windows)
-; Build the binary first:  pip install ".[freeze]" && pyinstaller --onefile --name serial-console-mcp --collect-all mcp --collect-all serial_console_mcp packaging/entry.py
+; Build the binary first:  pip install ".[freeze]" && pyinstaller --onefile --name serial-console-mcp --collect-all mcp --collect-all serial_console_mcp --collect-all pyte packaging/entry.py
 ; Then compile this with Inno Setup -> Output\SerialConsoleMCP-Setup.exe
 
 #define MyAppName "Serial Console MCP"

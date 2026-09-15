@@ -75,6 +75,7 @@ def test_encode_keys():
 # --- screen model ----------------------------------------------------------------------------
 
 def test_screen_model_and_answerback():
+    pytest.importorskip("pyte")
     answers = []
     sc = t.Screen(20, 4, answer=answers.append)
     sc.feed(b"\x1b[2J\x1b[H Main Menu\r\n 1. Foo\r\n 2. Bar\x1b[c\x1b[6n")
@@ -132,6 +133,7 @@ def test_connect_rejects_bad_terminal_and_size():
 
 
 def test_screen_tool_with_pyte():
+    pytest.importorskip("pyte")
     p = _connect(preset="screen-console", baud=9600)
     assert "terminal xterm 80x25" in m.status()
     p.feed(b"\x1b[2J\x1b[H  BIOS SETUP\r\n\r\n  > Boot Order\r\n    Exit\x1b[c")
@@ -171,6 +173,7 @@ def test_send_keys_errors_and_read_only(monkeypatch):
 
 
 def test_terminal_settings_are_remembered(tmp_path):
+    pytest.importorskip("pyte")
     _connect(terminal="xterm", cols=132, rows=50, name="bmc")
     m.disconnect()
     out = m.reconnect_last("bmc")
