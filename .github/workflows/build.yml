@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install . pyinstaller
+      - run: pip install ".[freeze]"
       - run: pyinstaller --onefile --name serial-console-mcp --collect-all mcp --collect-all serial_console_mcp packaging/entry.py
       - name: Compile Inno Setup installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
