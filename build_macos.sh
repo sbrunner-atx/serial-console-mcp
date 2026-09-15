@@ -8,16 +8,16 @@
 #   NOTARY_PROFILE="AC"  ./build_macos.sh
 set -euo pipefail
 
-APP_NAME="ham-serial-mcp"
-VERSION="${VERSION:-1.0}"
-IDENTIFIER="${IDENTIFIER:-com.yourcall.hamserialmcp}"
-INSTALL_LOCATION="/Library/Application Support/HamSerialMCP"
+APP_NAME="serial-console-mcp"
+VERSION="${VERSION:-0.1.0}"
+IDENTIFIER="${IDENTIFIER:-org.stefanbrunner.serialconsolemcp}"
+INSTALL_LOCATION="/Library/Application Support/SerialConsoleMCP"
 
 python3 -m venv .venv
 # shellcheck disable=SC1091
 source .venv/bin/activate
 pip install --quiet -r requirements.txt pyinstaller
-pyinstaller --onefile --name "$APP_NAME" --collect-all mcp ham_serial_mcp.py
+pyinstaller --onefile --name "$APP_NAME" --collect-all mcp serial_console_mcp.py
 
 # Sign the Mach-O with hardened runtime (required for notarization).
 if [ -n "${SIGN_IDENTITY_APP:-}" ]; then
@@ -38,21 +38,22 @@ pkgbuild --root pkgroot \
   --version "$VERSION" \
   --scripts scripts \
   --install-location "/" \
-  "HamSerialMCP-component.pkg"
+  "SerialConsoleMCP-component.pkg"
 
-productbuild --package "HamSerialMCP-component.pkg" "HamSerialMCP-$VERSION.pkg"
+productbuild --package "SerialConsoleMCP-component.pkg" "SerialConsoleMCP-$VERSION.pkg"
+rm -f "SerialConsoleMCP-component.pkg"  # intermediate; keep only the product pkg
 
 if [ -n "${SIGN_IDENTITY_INSTALLER:-}" ]; then
   productsign --sign "$SIGN_IDENTITY_INSTALLER" \
-    "HamSerialMCP-$VERSION.pkg" "HamSerialMCP-$VERSION-signed.pkg"
-  mv "HamSerialMCP-$VERSION-signed.pkg" "HamSerialMCP-$VERSION.pkg"
+    "SerialConsoleMCP-$VERSION.pkg" "SerialConsoleMCP-$VERSION-signed.pkg"
+  mv "SerialConsoleMCP-$VERSION-signed.pkg" "SerialConsoleMCP-$VERSION.pkg"
   if [ -n "${NOTARY_PROFILE:-}" ]; then
-    xcrun notarytool submit "HamSerialMCP-$VERSION.pkg" \
+    xcrun notarytool submit "SerialConsoleMCP-$VERSION.pkg" \
       --keychain-profile "$NOTARY_PROFILE" --wait
-    xcrun stapler staple "HamSerialMCP-$VERSION.pkg"
+    xcrun stapler staple "SerialConsoleMCP-$VERSION.pkg"
   fi
 else
   echo "WARN: SIGN_IDENTITY_INSTALLER not set -> unsigned .pkg (Gatekeeper will warn)."
 fi
 
-echo "Built HamSerialMCP-$VERSION.pkg"
+echo "Built SerialConsoleMCP-$VERSION.pkg"

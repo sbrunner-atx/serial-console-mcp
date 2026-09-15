@@ -1,24 +1,64 @@
-# Let Claude Run Your Radio
+# serial-console-mcp
 
-This adds a few tools to **Claude Desktop** so you can control a radio (or rotator,
-amplifier, antenna switch — anything on a USB serial cable) just by *asking Claude*.
+**Let Claude drive your serial console.**
+
+[![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
+&nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: experimental (0.1.0)**
+
+This adds a few tools to **Claude Desktop** so you can talk to anything on a serial
+port — a network device's console/craft port (Juniper, Cisco, etc.), a radio,
+rotator, amplifier, antenna switch, or a microcontroller — just by *asking Claude*.
 
 You do **not** need to know any programming. After it's installed you talk to Claude
 normally:
 
 > **You:** What serial ports do you see?
 > **Claude:** I found two. One looks like a Silicon Labs CP210x on COM4 — that's
-> probably your radio.
+> probably your device.
 >
-> **You:** Connect to COM4 at 38400 baud.
+> **You:** Connect to COM4 at 9600 baud.
 > **Claude:** Connected.
 >
-> **You:** Ask the rig what frequency it's on.
+> **You:** Log in and show me the version.
+
+## How it works (the important part)
+
+A serial console isn't a simple question-and-answer channel. It echoes what you
+type, prints unsolicited messages on its own (logs, interface flaps), and can dump
+pages of output. So the moment a port is open, a background reader keeps draining
+it into a buffer. That means Claude can:
+
+- **send** a command (writes only — doesn't guess when the reply is done), then
+- **read until a prompt** appears (`# `, `> `, `login:` …) to capture the whole
+  reply — even a long one — without cutting it off, or
+- **read whatever's waiting** for streaming/unsolicited output.
+
+This is the same model `minicom` and `expect` use, which is why it handles
+interactive CLIs properly.
+
+### The tools
+
+| Tool | What it does |
+| --- | --- |
+| `list_serial_ports` | Enumerate ports with description and USB hardware id |
+| `connect` / `reconnect_last` / `disconnect` | Open a port (baud, data bits, parity, stop bits); remembers the last one |
+| `send_text` | Write an ASCII command with CR / LF / CRLF / no line ending. Write-only |
+| `send_hex` | Write raw bytes given as hex (Icom CI-V and other binary protocols) |
+| `read_until_prompt` | Return buffered output up to a literal or regex prompt, leaving the rest |
+| `read_available` | Return whatever has arrived, as text and hex |
+| `query_text` | Clear, send, then read until a prompt or until the line goes idle |
+| `clear_buffer` / `status` | Housekeeping |
+
+One port is open at a time. The receive buffer is capped at 4 MB; if a device
+streams for hours unread, the oldest bytes are dropped and `status` says how many.
 
 ## Installing
 
-1. Run the installer you were given (the `.exe` on Windows, or the `.pkg` on a Mac)
-   and click through it like any normal program. It sets everything up for you.
+1. Download the installer for your computer from the
+   [Releases page](https://github.com/sbrunner-atx/serial-console-mcp/releases)
+   (the `.exe` on Windows, or the `.pkg` on a Mac) and click through it like any
+   normal program. It sets everything up for you. The installers are unsigned for
+   now, so expect a Gatekeeper / SmartScreen warning.
 2. **Completely quit Claude Desktop** — not just closing the window. On Windows,
    right-click the Claude icon near the clock and choose Quit. On a Mac, press
    ⌘Q or choose **Claude → Quit**.
@@ -29,18 +69,40 @@ normally:
 That's the whole thing. There's no separate program to keep open and nothing to
 configure by hand.
 
+## Installing from source (developers)
+
+Needs Python 3.10 or newer and `pyserial` + the MCP SDK (pinned `<2`):
+
+```bash
+git clone https://github.com/sbrunner-atx/serial-console-mcp.git
+cd serial-console-mcp
+python3 -m venv .venv && source .venv/bin/activate   # .venv\Scripts\activate on Windows
+pip install -r requirements.txt
+python configure_claude.py --command "$PWD/.venv/bin/python" --arg "$PWD/serial_console_mcp.py"
+```
+
+That writes a `serial-console` entry into `claude_desktop_config.json` (merging
+with whatever is already there and backing the old file up first). Quit and
+reopen Claude Desktop. `python configure_claude.py --remove` undoes it.
+
+Run the tests with `pip install pytest && pytest`. They use a fake serial port,
+so no hardware is needed. See [BUILD.md](BUILD.md) for the installers.
+
 ## Using it
 
 Plain-English requests work. Some examples:
 
 - "List my serial ports."
-- "Connect to the radio on COM4 at 9600 baud."
+- "Connect to the console on /dev/cu.usbserial-10 at 9600 baud."
 - "Reconnect to the same port as last time." (it remembers)
-- "Send the command `ID` and read the reply."
+- "Send a return, then read until the login prompt."
+- "Log in as admin and run `show interfaces terse`, then show me all of it."
+- "Just read whatever the device is printing right now."
 - "Disconnect when you're done."
 
-If you have an Icom (which uses CI-V), tell Claude — it can send the hex commands
-those radios expect.
+For a router/switch console, tell Claude the prompt it should wait for (often `# `
+for enable mode or `> ` for user mode) and it will read until it sees it. For an
+Icom radio (CI-V), tell Claude — it can send the hex commands those radios expect.
 
 ## If something doesn't work
 
@@ -52,8 +114,8 @@ those radios expect.
 
 **"Could not open the port" / "access denied."**
 - A serial port can only be used by one program at a time. Close anything else that
-  might be holding it: WSJT-X, your contest logger, a terminal program, the radio's
-  own software.
+  might be holding it: a terminal (PuTTY/minicom/screen), WSJT-X, your contest
+  logger, the device's own software.
 
 **Claude says it can't access serial ports at all.**
 - Make sure you fully quit and reopened Claude Desktop after installing.
@@ -61,13 +123,20 @@ those radios expect.
 
 **It connected but a command gets no reply.**
 - Almost always the **baud rate** is wrong, or the **line ending** is wrong for your
-  gear. Tell Claude to try the rig's documented baud rate, or a different line ending
-  (most rigs want a carriage return).
+  gear. Most Unix-style consoles want a plain newline (LF); most rigs want a carriage
+  return (CR). Ask Claude to send a return first to draw a fresh prompt.
 
 ## A word on safety
 
 These tools send exactly what you (through Claude) ask them to send, to whatever
-device is on the cable. Claude will show you each action before it runs it. If
-something looks wrong, decline it.
+device is on the cable. Claude Desktop asks you to approve each tool call, so you
+see every command before it runs. Read it. A console session on a router or a
+rig can reconfigure, reboot, or transmit, and this server does not try to guess
+which commands are dangerous. If something looks wrong, decline it, and keep a
+real terminal handy for anything you would not want an assistant to type.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 73!

@@ -3,8 +3,8 @@
 # the logged-in user so it writes to ~/Library/Application Support/Claude.
 set -e
 
-INSTALL_DIR="/Library/Application Support/HamSerialMCP"
-BIN="$INSTALL_DIR/ham-serial-mcp"
+INSTALL_DIR="/Library/Application Support/SerialConsoleMCP"
+BIN="$INSTALL_DIR/serial-console-mcp"
 
 CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")
 if [ -z "$CONSOLE_USER" ] || [ "$CONSOLE_USER" = "root" ]; then
@@ -13,7 +13,7 @@ if [ -z "$CONSOLE_USER" ] || [ "$CONSOLE_USER" = "root" ]; then
 fi
 
 USER_UID=$(id -u "$CONSOLE_USER")
-USER_HOME=$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
+USER_HOME=$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory 2>/dev/null | sed 's/^NFSHomeDirectory: //')
 
 launchctl asuser "$USER_UID" sudo -u "$CONSOLE_USER" \
   "$BIN" configure --command "$BIN" --config-home "$USER_HOME" || true

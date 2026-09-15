@@ -2,18 +2,20 @@
 """
 configure_claude.py
 ===================
-Registers (or removes) ham-serial-mcp in Claude Desktop by editing exactly one
+Registers (or removes) serial-console-mcp in Claude Desktop by editing exactly one
 entry in claude_desktop_config.json. Creates the file if missing, preserves any
 servers already there, and backs up the old file first.
 
 Usable three ways:
   * imported  -> write_config(command, args, remove=False, config_home=None)
-  * as a CLI  -> python configure_claude.py --command "/path/to/ham-serial-mcp"
-  * via the frozen server binary -> ham-serial-mcp configure --command "<binary>"
+  * as a CLI  -> python configure_claude.py --command "/path/to/serial-console-mcp"
+  * via the frozen server binary -> serial-console-mcp configure --command "<binary>"
 
 --config-home lets an installer that runs as root point writes at the real
 user's home directory.
 """
+
+from __future__ import annotations
 
 import argparse
 import json
@@ -23,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-SERVER_KEY = "ham-serial"
+SERVER_KEY = "serial-console"
 
 
 def claude_config_path(config_home: Path | None = None) -> Path:
@@ -81,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     home = Path(a.config_home) if a.config_home else None
     cfg = write_config(a.command or "", a.arg, remove=a.remove, config_home=home)
 
-    print(("Removed" if a.remove else "Registered") + f" ham-serial in {cfg}")
+    print(("Removed" if a.remove else "Registered") + f" serial-console in {cfg}")
     if not a.remove:
         print("\nFully quit Claude Desktop and reopen it, then ask:")
         print('  "What serial ports do you see?"')
