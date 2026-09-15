@@ -52,6 +52,15 @@ interactive CLIs properly.
 One port is open at a time. The receive buffer is capped at 4 MB; if a device
 streams for hours unread, the oldest bytes are dropped and `status` says how many.
 
+## The Field Guide
+
+[serial-console-mcp Field Guide (PDF)](docs/serial-console-mcp%20Field%20Guide.pdf) is the
+operator's manual: what each tool does, every connection setting said in plain
+language, the console rules, a per-device playbook (craft ports, text CAT,
+Icom CI-V, rotators and microcontrollers), four worked sessions, and a
+troubleshooting table. Source is `docs/brand/` (HTML + CSS, rendered with
+WeasyPrint).
+
 ## Installing
 
 1. Download the installer for your computer from the
