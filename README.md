@@ -6,7 +6,7 @@
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/serial-console-mcp?label=pypi&cacheSeconds=3600)](https://pypi.org/project/serial-console-mcp/)
-&nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: experimental (0.3.0)**
+&nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: 0.3.0, verified live on a Juniper EX2200 console**
 
 This adds a few tools to **Claude Desktop** so you can talk to anything on a serial
 port — a network device's console/craft port (Juniper, Cisco, etc.), a radio,

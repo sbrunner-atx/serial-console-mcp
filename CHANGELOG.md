@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Verified
+- Live session on 2026-09-15: the 0.3.0 PyPI package, launched via `uvx` as
+  Claude Desktop does, drove a Juniper EX2200-C (Junos 15.1R6.7) console over
+  a Prolific PL2303 adapter: `juniper-craft` preset, one `expect` sequence from
+  shell to CLI through three `show` commands and back, annotated capture. The
+  first hardware run; everything before it was the simulated port.
+- `_hosttest/juniper_login_check.py`: interactive login check that asks for
+  credentials with getpass.
+
 ## [0.3.0] - 2026-09-15
 
 The terminal release: the VT100 / ANSI / xterm family, as an agent needs it.
