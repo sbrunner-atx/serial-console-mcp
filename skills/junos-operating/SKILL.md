@@ -55,18 +55,26 @@ shell, not configuration mode, when there is no `[edit]` line above it.
 - Enter: `configure exclusive` (locks the candidate; refuse-safe if someone
   else is editing) or `configure private`. Bare `configure` shares the
   candidate with anyone else editing; avoid it. Expect `# $` and `[edit]`.
+  Junos answers `warning: uncommitted changes will be discarded on exit` (the
+  exclusive lock talking) and `Entering configuration mode`.
+- `Users currently editing the configuration:` followed by a user and terminal
+  means someone else is in configuration mode. `configure exclusive` still
+  succeeds when they hold no lock, but tell the user who it is before changing
+  anything.
 - `error: configuration database locked` or `is modifying the configuration`:
   someone else is in. Stop and tell the user; do not force with `configure`.
 - Move: `edit interfaces ge-0/0/1`, `up`, `top`, `exit` (one level up, or out
   of config mode at the top).
-- Leave without changes: `rollback 0` then `exit`. If Junos says
+- Leave without changes: `rollback 0` (answers `load complete`) then `exit`
+  (`Exiting configuration mode`). If Junos says
   `The configuration has been changed but not committed`, answer `yes` only if
   the user wants the changes discarded, otherwise `commit` first.
 
 ## Committing and rolling back
 
 1. `show | compare` and show the diff to the user before every commit.
-2. `commit check` to validate without applying.
+2. `commit check` to validate without applying; success is
+   `configuration check succeeds`.
 3. For anything that can cut the path you are on (interfaces, VLANs,
    management, firewall filters, routing): `commit confirmed 5`, verify, then
    `commit` within five minutes. If the box becomes unreachable, it rolls back
@@ -107,17 +115,27 @@ From configuration mode, prefix with `run` (`run show interfaces terse`).
 
 Not sure a command exists? Type the words so far and `?` (`show system ?`):
 Junos lists the completions at once, no Enter needed. Send it with
-`line_ending="NONE"`, read the list with `read_available`, then
-`send_keys(["ctrl-u"])` to clear the half-typed line and a bare return to draw
-a clean prompt. Junos redraws an edited line with spaces and backspaces, so a
+`line_ending="NONE"`, then `send_keys(["ctrl-u"])` to clear the half-typed line
+and a bare return to draw a clean prompt; `read_until_prompt` after that return
+brings back the whole list. Reading straight after `?` can return before a long
+list has started. Junos redraws an edited line with spaces and backspaces, so a
 prompt pattern ending in `$` does not match until that return; the same holds
 after Tab completion.
 
 ## Paging and long output
 
 Run `set cli screen-length 0` once per session, or add `| no-more` to a
-command. Otherwise `---(more)---` becomes your prompt; if it appears, pass
-`auto_reply={"---(more)---": " "}` or send a space.
+command, before anything that prints more than a screen. Otherwise Junos stops
+at a pager line: `---(more)---` on some pages, `---(more 51%)---` on others.
+Pass `auto_reply={"---(more": " "}` (the prefix covers both) or send a space per
+page.
+
+While the pager is showing, every key is a pager command, not the start of the
+next CLI command: `q` quits, space pages on, and letters open their own prompts.
+On the EX2200 a command typed at the pager did real things: `s` saved the
+output to a file named after the rest of the line, and `e` opened an `except`
+filter. If a read stops at `---(more`, press `q` and read the prompt before
+sending anything else.
 
 ## Interrupting and recovering
 
@@ -137,7 +155,9 @@ allows `show ...` and `cli`/`exit`, and refuses the rest.
 
 ## Verified
 
-The shell transitions and every show command above were run on a Juniper
-EX2200-C, Junos 15.1R6.7, through serial-console-mcp on 15 September 2026.
-Entering and leaving configuration mode was checked with nothing committed;
-`commit`, `commit confirmed` and `rollback 1` follow the Junos documentation.
+The shell transitions, every show command above, the pager, `?` help, and
+configuration mode through `configure exclusive`, `commit check`, `edit`, `up`,
+`top`, `run show`, `rollback 0` and `exit` were run on a Juniper EX2200-C, Junos
+15.1R6.7, through serial-console-mcp on 15 September 2026, with nothing
+committed. `commit`, `commit confirmed` and `rollback 1` follow the Junos
+documentation.

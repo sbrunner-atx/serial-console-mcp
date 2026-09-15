@@ -553,7 +553,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td>VLANs, neighbours, routes</td><td><span class="mono">show ethernet-switching interfaces</span>, <span class="mono">show vlans</span>, <span class="mono">show lldp neighbors</span>, <span class="mono">show route</span></td></tr>
     <tr><td>Config and log</td><td><span class="mono">show configuration | display set</span>, <span class="mono">show log messages | last 50</span></td></tr>
   </table>
-  <p><span class="mono">set cli screen-length 0</span> once, or <span class="mono">| no-more</span>. Unsure a command exists? Type <span class="mono">?</span> after the words so far, clear the line with Ctrl-U, and send a bare return for a clean prompt.</p>
+  <p><span class="mono">set cli screen-length 0</span> once, or <span class="mono">| no-more</span>, before anything long. At a <span class="mono">---(more</span> pager every key is a pager command (<span class="mono">q</span> quits, <span class="mono">s</span> saves the output to a file), so press <span class="mono">q</span> before typing the next command. Unsure a command exists? Type <span class="mono">?</span> after the words so far, clear the line with Ctrl-U, and send a bare return for a clean prompt.</p>
 
   <h3>ios-operating</h3>
   <table>
@@ -589,13 +589,18 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   </div>
   <div class="callout">
     <div class="ct">Verified on the EX2200</div>
-    <p>The Junos parts of this chapter were run live on 15 September 2026: shell to CLI and
-    back with <span class="mono">cli</span>, <span class="mono">exit</span>, <span class="mono">start shell</span>
-    and <span class="mono">cli -c</span>; into <span class="mono">configure exclusive</span>,
-    <span class="mono">show | compare</span>, <span class="mono">rollback 0</span> and out with nothing
-    committed; and every show command in the Junos table, including the proof that
-    <span class="mono">show system status</span> is a syntax error on Junos. The IOS skill is written
-    from the Cisco command references and has not yet met a Cisco on this bench.</p>
+    <p>The Junos parts of this chapter were run live on 15 September 2026, with nothing committed:
+    shell to CLI and back with <span class="mono">cli</span>, <span class="mono">exit</span>,
+    <span class="mono">start shell</span> and <span class="mono">cli -c</span>; every show command in the
+    Junos table, including the proof that <span class="mono">show system status</span> is a syntax error;
+    the pager and <span class="mono">?</span> help; and configuration mode through
+    <span class="mono">configure exclusive</span>, <span class="mono">commit check</span>,
+    <span class="mono">edit</span>/<span class="mono">up</span>/<span class="mono">top</span>,
+    <span class="mono">run show</span>, <span class="mono">rollback 0</span> and <span class="mono">exit</span>.
+    The testing taught one lesson the hard way: before the pager string was right, a command typed at
+    the pager was read as pager keys and saved the output to a file on the switch. The skill now says to
+    press <span class="mono">q</span> first. The IOS skill is written from the Cisco command references
+    and has not yet met a Cisco on this bench.</p>
   </div>
 </div>
 

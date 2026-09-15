@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the EX2200. Neither Junos nor IOS has `show system status`, and IOS has no
   `show interfaces brief` or `| last`; the skills now say what to use instead.
   The IOS skill had `show logging | last 50`, which is Junos syntax; fixed.
+- Junos pager, `?` help and configuration mode (`configure exclusive`,
+  `commit check`, `edit`/`up`/`top`, `run show`, `rollback 0`, `exit`) run on
+  the EX2200 with nothing committed. The pager line is `---(more)---` or
+  `---(more NN%)---`; the skill now matches the prefix and says to press `q`
+  before typing, because keys at the pager are pager commands.
 
 ### Verified
 - Live session on 2026-09-15: the 0.3.0 PyPI package, launched via `uvx` as
