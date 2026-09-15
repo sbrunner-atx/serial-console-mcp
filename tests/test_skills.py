@@ -8,7 +8,8 @@ import pytest
 
 SKILLS = Path(__file__).resolve().parents[1] / "skills"
 EXPECT = {
-    "serial-console": ["read_until_prompt", "send_keys", "screen", "presets", "ctrl-c"],
+    "serial-console": ["read_until_prompt", "send_keys", "screen", "presets", "ctrl-c",
+                       "alarm and control panels", "IoT", "detect_baud"],
     "junos-operating": ["cli", "configure exclusive", "show | compare", "commit confirmed",
                         "rollback 0", "rollback 1", "show interfaces terse", "show system alarms",
                         "set cli screen-length 0", "exit", "cli -c", "start shell",

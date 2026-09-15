@@ -24,7 +24,8 @@
     <p class="blurb"><strong>serial-console-mcp</strong> brings AI to the configuration of
     telecommunication equipment through the console port it already has: Juniper and Cisco
     routers and switches, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, and GS-232
-    antenna rotators. This guide shows how the agent reads the prompt instead of guessing, changes
+    antenna rotators, and it speaks to any other serial device too, raw, ANSI or VT100, from IoT
+    gateways to alarm and control panels. This guide shows how the agent reads the prompt instead of guessing, changes
     configuration with a safety net, and hands the port back cleanly: everything a terminal
     program knows, explained for the operator who would rather ask.</p>
   </div>
@@ -78,7 +79,9 @@
   <h2>The Tools at a Glance</h2>
   <div class="h2rule"></div>
   <p class="lead">One server, thirty tools, as many open ports as the shack has cables.
-  The agent picks the tool; you say what you want in plain language.</p>
+  The agent picks the tool; you say what you want in plain language. Nothing here is tied to
+  telecom: if a device has a serial port and speaks raw bytes, ANSI or VT100, the same tools
+  drive it.</p>
   <table class="glance">
     <tr><th style="width:30%">Tools</th><th style="width:40%">What they do</th><th>When the agent reaches for them</th></tr>
     <tr><td class="strong mono">list_serial_ports · list_presets</td><td>Every port the computer sees, marked if open here; the usual settings for ten device families.</td><td class="get">First, whenever a port or its settings are unknown</td></tr>
@@ -169,7 +172,9 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <p><b>Claude</b> is an assistant made by Anthropic, running in the Claude Desktop app.
   <b>serial-console-mcp</b> is best thought of as a rig-interface cable with a very patient
   operator on the other end: Claude types what you ask into the port, watches what comes back,
-  and reports it. Nothing about your device changes; it sees an ordinary terminal.</p>
+  and reports it. Nothing about your device changes; it sees an ordinary terminal. The cable
+  does not care what is on the other end: a switch, a radio, an alarm panel, an IoT gateway or
+  a lab instrument all look the same to it.</p>
 
   <h3>Operating is a conversation</h3>
   <table>
@@ -369,8 +374,9 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <div class="eyebrow">Chapter 03 · The playbook</div>
   <h2>The Device Playbook</h2>
   <div class="h2rule"></div>
-  <p class="lead">Four families cover nearly everything on a serial cable. Settings below are
-  the common factory defaults; the device's manual or menu wins when they differ.</p>
+  <p class="lead">Four families have their own playbook, and the last row is how to approach
+  anything else on a serial port. Settings below are the common factory defaults; the device's
+  manual or menu wins when they differ.</p>
   <table>
     <tr><th style="width:22%">Family</th><th style="width:16%">Typical settings</th><th style="width:12%">Line ending</th><th style="width:22%">Read with</th><th>Notes</th></tr>
     <tr><td class="strong">Network craft / console ports<br><span class="mono">Juniper · Cisco · Arista · switches, firewalls</span></td>
@@ -385,6 +391,9 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong">Rotators, switches, MCUs<br><span class="mono">Yaesu GS-232 · Green Heron · Arduino · ESP32</span></td>
         <td class="mono">9600 or 115200 8N1</td><td class="mono">CR (rotators)<br>LF (Arduino)</td><td class="mono">read_available or<br>read_until_prompt</td>
         <td>GS-232 <span class="mono">C</span> returns <span class="mono">+0xxx</span> azimuth; <span class="mono">rotator_build</span> and <span class="mono">rotator_parse</span> cover read, move, stop and speed. Opening a port resets many Arduinos via DTR; wait a second and expect a boot banner. Sketches that print continuously are a <span class="mono">read_available</span> job.</td></tr>
+    <tr style="break-inside: avoid; page-break-inside: avoid"><td class="strong">Everything else on a serial port<br><span class="mono">IoT gateways · alarm and access-control panels · UPS and PDU menus · lab instruments · industrial controllers</span></td>
+        <td class="mono">9600 8N1 to start<br>detect_baud if silent</td><td class="mono">CR or CRLF<br>(try both)</td><td class="mono">read_until_prompt<br>read_available<br>screen</td>
+        <td>Choose the terminal mode by what the device prints: plain text or binary, <span class="mono">dumb</span>; colours and cursor codes, <span class="mono">ansi</span>; a full-screen menu that repaints, <span class="mono">xterm</span> with <span class="mono">screen</span>. Binary protocols such as Modbus RTU go through <span class="mono">send_hex</span> and <span class="mono">read_available</span>; the server does not decode them. Panels that can arm, disarm, unlock or switch power: start in read-only mode and confirm every command.</td></tr>
   </table>
   <div class="callout warn">
     <div class="ct">Transmit-capable gear</div>
@@ -475,9 +484,9 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <h3>Three terminal modes</h3>
   <table>
     <tr><th style="width:14%">Mode</th><th style="width:40%">What the agent sees</th><th>Use it for</th></tr>
-    <tr><td class="strong mono">dumb</td><td>The bytes exactly as received. The default.</td><td>CAT, CI-V, rotators, GPS, Arduino, and most CLIs</td></tr>
-    <tr><td class="strong mono">ansi</td><td>Colour and escape sequences stripped as they arrive; a bare carriage return overwrites the line, backspace moves left, erase-line and cursor moves are honoured. A progress bar reads as its final state, a coloured prompt as plain text, and <span class="mono">read_until_prompt</span> matches through the colour codes.</td><td>Linux shells, coloured router prompts, anything that prints <span class="mono">ESC[32m</span> noise. The console presets set it.</td></tr>
-    <tr><td class="strong mono">xterm · vt100</td><td>All of the above plus a real character grid, 80×24 unless you say otherwise, updated continuously. The <span class="mono">screen</span> tool returns the grid as rows of text with the cursor position, and the terminal answers &ldquo;who are you&rdquo; queries as a VT100 so full-screen programs behave.</td><td>BIOS setup over a serial console, RAID and BMC consoles, menu-driven switches (older ProCurve, Netgear), <span class="mono">vi</span>, <span class="mono">top</span>. The <span class="mono">screen-console</span> preset.</td></tr>
+    <tr><td class="strong mono">dumb</td><td>The bytes exactly as received. The default.</td><td>CAT, CI-V, rotators, GPS, Arduino, IoT gateways and sensors, binary protocols, and most CLIs</td></tr>
+    <tr><td class="strong mono">ansi</td><td>Colour and escape sequences stripped as they arrive; a bare carriage return overwrites the line, backspace moves left, erase-line and cursor moves are honoured. A progress bar reads as its final state, a coloured prompt as plain text, and <span class="mono">read_until_prompt</span> matches through the colour codes.</td><td>Linux shells, coloured router prompts, embedded and IoT consoles, anything that prints <span class="mono">ESC[32m</span> noise. The console presets set it.</td></tr>
+    <tr><td class="strong mono">xterm · vt100</td><td>All of the above plus a real character grid, 80×24 unless you say otherwise, updated continuously. The <span class="mono">screen</span> tool returns the grid as rows of text with the cursor position, and the terminal answers &ldquo;who are you&rdquo; queries as a VT100 so full-screen programs behave.</td><td>BIOS setup over a serial console, RAID and BMC consoles, menu-driven switches (older ProCurve, Netgear), alarm and control panel menus, UPS and PDU setup screens, <span class="mono">vi</span>, <span class="mono">top</span>. The <span class="mono">screen-console</span> preset.</td></tr>
   </table>
   <p>Choose the mode on <span class="mono">connect(terminal=…)</span> or let the preset. The raw
   bytes are always kept in the capture file and in the screen model; only what the read tools

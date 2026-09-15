@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Descriptions now also say what else the server is for: any device on a serial
+  port, in raw, ANSI or VT100 mode, such as IoT gateways, alarm and control
+  panels, UPS and PDU menus, lab instruments and industrial controllers. README
+  opening, PyPI summary and keywords, registry title, `serial-console` skill,
+  `connect` tool description, and the Field Guide cover, chapter A, chapter C,
+  a new "everything else" row in the device playbook, and the terminal modes
+  table.
+
 ## [0.3.1] - 2026-09-15
 
 Leads with what the server is for: AI configuring telecommunication equipment

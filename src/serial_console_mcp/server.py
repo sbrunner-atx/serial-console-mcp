@@ -5,7 +5,9 @@ serial-console-mcp
 A Model Context Protocol (MCP) server that gives Claude Desktop (or any MCP
 client) control of serial ports, so you can talk to a network device's
 craft/console port (Juniper, Cisco, etc.), a CAT radio, an Icom CI-V rig, a
-rotator, a microcontroller, or anything else on an RS-232 / USB-to-serial cable.
+rotator, a microcontroller, an IoT gateway, an alarm or control panel, a lab
+instrument, or anything else on an RS-232 / USB-to-serial cable, in raw, ANSI or
+VT100 mode.
 
 It is deliberately GENERIC: raw read/write plus ASCII and hex helpers, built
 around a real interactive-console model (a background reader thread per port +
@@ -694,7 +696,10 @@ def connect(
     Give `preset` (see list_presets) to load a device family's usual settings, and
     override any field explicitly, e.g. "38400 with XON/XOFF" -> baud=38400,
     xonxoff=True. Several ports can be open at once; each gets a `name` and later
-    tools default to the most recently used one.
+    tools default to the most recently used one. Nothing is specific to telecom
+    gear: any device on a serial port works, including IoT gateways, alarm and
+    control panels, UPS and PDU menus and lab instruments; choose `terminal` by
+    what the device prints.
 
     Args:
         port: System port name, e.g. "COM4" (Windows), "/dev/cu.usbserial-10"

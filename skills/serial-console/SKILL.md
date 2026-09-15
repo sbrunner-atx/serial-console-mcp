@@ -3,7 +3,9 @@ name: serial-console
 description: >
   Operating discipline for driving serial devices through serial-console-mcp:
   network craft/console ports (Juniper, Cisco, Linux), text CAT radios
-  (Kenwood, Elecraft, Yaesu), Icom CI-V, rotators, and microcontrollers. Use
+  (Kenwood, Elecraft, Yaesu), Icom CI-V, rotators, microcontrollers, IoT
+  gateways, alarm and control panels, instruments, and anything else with a
+  serial port, whether it speaks raw bytes, ANSI or a VT100 screen. Use
   whenever the user wants to connect to, read from, or command anything on a
   serial cable: picking settings, sending with the right line ending, reading
   until the prompt instead of guessing, and handing the port back cleanly.
@@ -66,6 +68,12 @@ For a Juniper, also load `junos-operating`; for a Cisco or IOS-like CLI,
 ## Choosing settings
 
 - Default is 9600 8N1, no flow control, CR. Say only what differs.
+- No preset for the device (alarm panel, UPS, instrument, IoT gateway)? Start
+  at 9600 8N1, run `detect_baud` if it stays silent, and pick the terminal mode
+  by what it prints: `dumb` for plain text or binary, `ansi` for colours and
+  cursor codes, `xterm` with `screen` for a full-screen menu. For anything that
+  can arm, disarm, unlock or switch power, use read-only mode and confirm each
+  command with the user.
 - `list_presets` has the usual settings per family; `connect(preset=...)`
   loads them and explicit arguments override. Presets set the line ending and
   prompt too, so a `kenwood-cat` connection needs only `query_text("ID")`.

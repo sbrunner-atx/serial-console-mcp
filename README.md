@@ -9,7 +9,8 @@
 &nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: 0.3.1, verified live on a Juniper EX2200 console**
 
 serial-console-mcp connects an AI assistant such as Claude to the serial console
-of the equipment that runs networks and radio stations:
+of the equipment that runs networks and radio stations, and of anything else
+with a serial port:
 
 - **Routers and switches.** Juniper (Junos) and Cisco (IOS, IOS-XE) console and
   craft ports: log in, read state, change configuration with a safety net
@@ -20,6 +21,11 @@ of the equipment that runs networks and radio stations:
   mode.
 - **Antenna rotators.** Yaesu GS-232 and the many controllers that speak it:
   read the heading, turn, stop.
+- **Anything else with a serial port.** Nothing is tied to telecom: the server
+  talks raw bytes, cleans up ANSI output, or keeps a full VT100/xterm screen, so
+  IoT gateways, alarm and access-control panels, UPS and PDU menus, lab
+  instruments, industrial controllers, Linux and BIOS consoles and
+  microcontrollers work too.
 
 You say what you want in plain language. The assistant drives the console
 through this server, Claude Desktop asks you to approve each step, and bundled
@@ -28,8 +34,8 @@ how to get in and out, which show commands answer everyday questions.
 
 Juniper support is verified on a real EX2200 console. Cisco, CI-V, CAT and
 rotator support follows the vendors' protocol references and has not yet met
-hardware on this bench. Anything else on a serial cable works too: Linux
-consoles, BIOS and BMC screens, microcontrollers, GPS receivers.
+hardware on this bench. The other device types use the generic tools rather than
+device-specific helpers.
 
 You do **not** need to know any programming. After it's installed you talk to Claude
 normally:
