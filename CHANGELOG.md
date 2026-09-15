@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-15
+
+Leads with what the server is for: AI configuring telecommunication equipment
+through its console port. Adds the Junos and IOS operating skills, verified on a
+Juniper EX2200, and fixes prompt matching after Junos redraws a line.
+
+### Changed
+- Registry title and description, PyPI summary, keywords and classifiers,
+  README opening and Field Guide cover now lead with AI for the configuration of
+  telecommunication equipment: Juniper and Cisco routers and switches, Icom CI-V
+  and Kenwood, Yaesu and Elecraft CAT transceivers, GS-232 antenna rotators.
+
 ### Added
 - Operating skills `junos-operating` and `ios-operating` (`skills/`): modes
   from the prompt, shell/CLI/configure transitions, commit and rollback or the

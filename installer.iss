@@ -3,7 +3,7 @@
 ; Then compile this with Inno Setup -> Output\SerialConsoleMCP-Setup.exe
 
 #define MyAppName "Serial Console MCP"
-#define MyAppVersion "0.3.0"
+#define MyAppVersion "0.3.1"
 #define MyAppPublisher "Stefan Brunner (AE5VG)"
 
 [Setup]
