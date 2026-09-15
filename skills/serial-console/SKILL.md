@@ -31,7 +31,9 @@ between calls; `get_transcript` re-reads what earlier calls already returned.
 | Lines | `set_lines`, `pulse_line`, `send_break` |
 | Record | `capture_start`, `capture_stop`, `get_transcript` (also resource `serial://transcript/{name}`) |
 | Diagnose | `port_in_use_by`, `detect_baud` |
+| Text CAT (Kenwood, Elecraft, Yaesu) | `cat_build`, `cat_parse` |
 | Icom CI-V | `civ_build`, `civ_parse`, `civ_freq` |
+| Rotator (GS-232) | `rotator_build`, `rotator_parse` |
 
 ## The six rules
 
@@ -45,8 +47,11 @@ between calls; `get_transcript` re-reads what earlier calls already returned.
 3. **Clear before a command whose reply must be clean.** `clear_buffer_first`
    on send, or `query_text`, discards syslog noise and stale output.
 4. **Prompts for CLIs, idle reads for everything else.** Routers and shells:
-   `read_until_prompt`. Kenwood-style CAT: the prompt is `;`. Icom CI-V and
-   other binary protocols: `send_hex`, then `read_available`, then `civ_parse`.
+   `read_until_prompt`. Kenwood-style CAT: the prompt is `;`, and `cat_parse`
+   turns the reply into a model, frequency or mode. Icom CI-V and other binary
+   protocols: `send_hex`, then `read_available`, then `civ_parse`. Rotators:
+   `rotator_build` for the command, `rotator_parse` for the position; a move
+   replies nothing, so read the position afterwards to confirm.
 5. **Garbage means baud, silence means line ending.** `�` and box characters:
    run `detect_baud`. Echo but no reply: the device wants CR instead of LF or
    the reverse. Nothing at all: send a bare return to draw a prompt, then check

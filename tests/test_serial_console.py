@@ -678,3 +678,65 @@ def test_write_config_creates_missing_and_rescues_broken(tmp_path):
 def test_cli_requires_command():
     with pytest.raises(SystemExit):
         configure_claude.main([])
+
+
+# --- text CAT and rotator helpers ------------------------------------------------------------
+
+def test_cat_build_and_parse():
+    from serial_console_mcp import cat
+    assert m.cat_build("FA", frequency_mhz=14.074).startswith("FA00014074000;")
+    assert m.cat_build("FA", frequency_mhz=14.074, flavor="yaesu").startswith("FA014074000;")
+    assert m.cat_build("MD", "2").startswith("MD2;\n(MD2; → operating mode: USB)")
+    assert m.cat_build("fa;").startswith("FA;")
+    assert m.cat_build("x").startswith("Could not build")
+    out = m.cat_parse("ID021;FA00014074000;MD2;PS1;AI0;")
+    assert "Kenwood TS-590S" in out and "14.074000 MHz" in out and "USB" in out
+    assert "power on/off: on" in out and "auto information: off" in out
+    #          freq        step   rit   r x b ch tx md vfo sc sp tn t# sh
+    good_if = ("IF" + "00014074000" + "00010" + "+0000" + "0" + "0" + "0" + "00" + "0" + "2"
+               + "0" + "0" + "1" + "0" + "00" + "0" + ";")
+    out = m.cat_parse(good_if)
+    assert "14.074000 MHz, USB, VFO A, split on, receiving, RIT +0000" in out
+    out = m.cat_parse("ID0570;FA014074000;MD0C;IF001014074000+000000000000000;", flavor="yaesu")
+    assert "Yaesu FT-991A" in out and "DATA-U" in out and "14.074000 MHz (Yaesu IF" in out
+    assert "did not understand" in m.cat_parse("?;")
+    assert "communication error" in m.cat_parse("E;")
+    assert m.cat_parse("hello").startswith("No ';'-terminated CAT replies")
+    assert m.cat_parse("") == "Empty reply."
+    assert "not in the table" in m.cat_parse("ID999;")
+    assert "ID017;" in m.cat_parse("ID017;", flavor="elecraft")
+    assert "Elecraft" in m.cat_parse("ID017;")
+    assert cat.describe("MD6;", "elecraft").endswith("DATA")
+
+
+def test_rotator_build_and_parse():
+    assert m.rotator_build("azimuth") == "C" and m.rotator_build("position") == "C2"
+    assert m.rotator_build("move", azimuth=180) == "M180"
+    assert m.rotator_build("move", azimuth=5) == "M005"
+    assert m.rotator_build("move_azel", azimuth=90, elevation=45) == "W090 045"
+    assert m.rotator_build("stop") == "S" and m.rotator_build("speed", speed=4) == "X4"
+    assert m.rotator_build("move").startswith("Could not build: move needs azimuth")
+    assert m.rotator_build("move", azimuth=500).startswith("Could not build")
+    assert m.rotator_build("speed", speed=9).startswith("Could not build")
+    assert m.rotator_parse("+0180\r") == "azimuth 180° (GS-232A)"
+    assert m.rotator_parse("+0180+0045") == "azimuth 180°, elevation 45° (GS-232A)"
+    assert m.rotator_parse("AZ=180 EL=045") == "azimuth 180°, elevation 45° (GS-232B)"
+    assert m.rotator_parse("AZ=270") == "azimuth 270° (GS-232B)"
+    assert "rejected" in m.rotator_parse("?>")
+    assert m.rotator_parse("").startswith("Empty") and m.rotator_parse("xx").startswith("No GS-232")
+
+
+def test_read_only_allows_rotator_reads(monkeypatch):
+    monkeypatch.setattr(m, "READ_ONLY", True)
+    _connect(preset="yaesu-rotator")
+    assert m.send_text("C").startswith("Sent") and m.send_text("C2").startswith("Sent")
+    assert m.send_text("M180").startswith("Read-only mode")
+    assert m.send_text("S").startswith("Read-only mode")
+
+
+def test_rotator_preset_query_round_trip():
+    p = _connect(preset="yaesu-rotator", name="rotator")
+    p.feed(b"+0180\r", delay=0.05)
+    out = m.query_text("C", read_timeout=2)
+    assert bytes(p.tx) == b"C\r" and out.startswith("Matched prompt '\\r'")
+    assert m.rotator_parse(out.split("\n", 1)[1]) == "azimuth 180° (GS-232A)"

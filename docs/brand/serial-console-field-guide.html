@@ -30,10 +30,10 @@
   <div class="statband">
     <div class="tagline">FIELD GUIDE&nbsp;&nbsp;·&nbsp;&nbsp;VERSION 0.2&nbsp;&nbsp;·&nbsp;&nbsp;SEPTEMBER 2026</div>
     <div class="stats">
-      <div class="stat"><div class="n">24</div><div class="l">Tools</div></div>
+      <div class="stat"><div class="n">28</div><div class="l">Tools</div></div>
       <div class="stat"><div class="n">10</div><div class="l">Device<br>presets</div></div>
       <div class="stat"><div class="n">6</div><div class="l">Console<br>rules</div></div>
-      <div class="stat"><div class="n">4</div><div class="l">Worked<br>sessions</div></div>
+      <div class="stat"><div class="n">5</div><div class="l">Worked<br>sessions</div></div>
     </div>
     <div class="coverfoot">
       <span>© 2026 STEFAN BRUNNER · AE5VG</span>
@@ -74,7 +74,7 @@
   <div class="eyebrow">Chapter A · Before you start</div>
   <h2>The Tools at a Glance</h2>
   <div class="h2rule"></div>
-  <p class="lead">One server, twenty-four tools, as many open ports as the shack has cables.
+  <p class="lead">One server, twenty-eight tools, as many open ports as the shack has cables.
   The agent picks the tool; you say what you want in plain language.</p>
   <table class="glance">
     <tr><th style="width:30%">Tools</th><th style="width:40%">What they do</th><th>When the agent reaches for them</th></tr>
@@ -86,7 +86,9 @@
     <tr><td class="strong mono">set_lines · pulse_line · send_break</td><td>Drive DTR and RTS, send BREAK; status shows CTS/DSR/CD/RI.</td><td class="get">Key a rig's PTT, reset an Arduino, interrupt a boot</td></tr>
     <tr><td class="strong mono">capture_start · capture_stop · get_transcript</td><td>Log a session to a file, raw or timestamped; re-read the rolling transcript.</td><td class="get">&ldquo;Record this console session&rdquo;</td></tr>
     <tr><td class="strong mono">port_in_use_by · detect_baud</td><td>Which program holds a port; which baud rate produces readable text.</td><td class="get">&ldquo;It says in use&rdquo; · &ldquo;I don't know the rate&rdquo;</td></tr>
+    <tr><td class="strong mono">cat_build · cat_parse</td><td>Kenwood/Elecraft/Yaesu ';' commands: build a frequency set, decode ID, FA, MD, IF and error replies.</td><td class="get">Any text-CAT rig</td></tr>
     <tr><td class="strong mono">civ_build · civ_parse · civ_freq</td><td>Icom CI-V frames: build, decode (echo vs reply, BCD frequency, mode, PTT), convert.</td><td class="get">Any Icom</td></tr>
+    <tr><td class="strong mono">rotator_build · rotator_parse</td><td>GS-232 commands (read, move, stop, speed) and position replies.</td><td class="get">Any Yaesu-protocol rotator</td></tr>
     <tr><td class="strong mono">clear_buffer · status</td><td>Housekeeping; status shows every open port, its lines, buffer and capture.</td><td class="get">Pre-flight; after anything odd</td></tr>
   </table>
   <div class="callout">
@@ -369,13 +371,13 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
         <td>Send a bare return to draw a prompt. Turn off paging once (<span class="mono">set cli screen-length 0</span>, <span class="mono">terminal length 0</span>) or <span class="mono">--More--</span> becomes your prompt.</td></tr>
     <tr><td class="strong">Text CAT radios<br><span class="mono">Kenwood · Elecraft · Yaesu (FT-991, FTdx) · Flex</span></td>
         <td class="mono">4800 – 115200 8N1<br>per the rig's menu</td><td class="mono">NONE</td><td class="mono">query_text<br>(empty prompt, idle read)</td>
-        <td>Commands end in <span class="mono">;</span> with no CR: <span class="mono">ID;</span> <span class="mono">FA;</span> <span class="mono">MD;</span>. Replies are one line ending in <span class="mono">;</span>. Elecraft echoes nothing; Kenwood may need <span class="mono">AI0;</span> to stop auto-info.</td></tr>
+        <td>Commands end in <span class="mono">;</span> with no CR: <span class="mono">ID;</span> <span class="mono">FA;</span> <span class="mono">MD;</span>. Replies are one line ending in <span class="mono">;</span>. <span class="mono">cat_build</span> formats a frequency set, <span class="mono">cat_parse</span> names the rig, mode and frequency. Elecraft echoes nothing; Kenwood may need <span class="mono">AI0;</span> to stop auto-info.</td></tr>
     <tr><td class="strong">Icom CI-V<br><span class="mono">IC-7300 · 7610 · 705 · 9700</span></td>
         <td class="mono">19200 8N1 (USB)<br>9600 via CI-V jack</td><td class="mono">n/a (binary)</td><td class="mono">send_hex →<br>read_available</td>
         <td>Frames are <span class="mono">FE FE &lt;rig&gt; E0 &lt;cmd&gt; … FD</span>; the reply shows as hex. Frequency is BCD, low byte first. Never enable XON/XOFF. If the rig echoes, the first frame back is your own.</td></tr>
     <tr><td class="strong">Rotators, switches, MCUs<br><span class="mono">Yaesu GS-232 · Green Heron · Arduino · ESP32</span></td>
         <td class="mono">9600 or 115200 8N1</td><td class="mono">CR (rotators)<br>LF (Arduino)</td><td class="mono">read_available or<br>read_until_prompt</td>
-        <td>GS-232 <span class="mono">C</span> returns <span class="mono">+0xxx</span> azimuth. Opening a port resets many Arduinos via DTR; wait a second and expect a boot banner. Sketches that print continuously are a <span class="mono">read_available</span> job.</td></tr>
+        <td>GS-232 <span class="mono">C</span> returns <span class="mono">+0xxx</span> azimuth; <span class="mono">rotator_build</span> and <span class="mono">rotator_parse</span> cover read, move, stop and speed. Opening a port resets many Arduinos via DTR; wait a second and expect a boot banner. Sketches that print continuously are a <span class="mono">read_available</span> job.</td></tr>
   </table>
   <div class="callout warn">
     <div class="ct">Transmit-capable gear</div>
@@ -458,7 +460,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <div class="eyebrow">Chapter E · At the bench</div>
   <h2>Worked Sessions</h2>
   <div class="h2rule"></div>
-  <p class="lead">Four sessions, one per family, showing what you say, what the agent sends,
+  <p class="lead">Five sessions, one per family, showing what you say, what the agent sends,
   and what comes back. Device replies are representative, not recordings.</p>
 
   <div class="qso">
@@ -485,9 +487,10 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
       <div class="xline rx"><span class="dir">READ</span><span class="txt">Matched prompt ';' after 6 bytes: ID021;</span></div>
       <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text("FA;")</span></div>
       <div class="xline rx"><span class="dir">READ</span><span class="txt">Matched prompt ';' after 14 bytes: FA00014074000;</span></div>
-      <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;ID 021 is a TS-590S. VFO A is on 14.074 MHz.&rdquo;</span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">cat_parse("ID021;FA00014074000;") → Kenwood TS-590S · VFO A frequency: 14.074000 MHz</span></div>
+      <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;It's a TS-590S on 14.074 MHz.&rdquo; To QSY: cat_build("FA", frequency_mhz=14.070) → FA00014070000; for query_text.</span></div>
     </div>
-    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;The preset supplied both things the dialog never asks for: no line ending (Kenwood parsers reject a CR) and ';' as the prompt, so each reply returned the instant it was complete.</div>
+    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;The preset supplied both things the dialog never asks for: no line ending (Kenwood parsers reject a CR) and ';' as the prompt, so each reply returned the instant it was complete; cat_parse turned the codes into a model and a frequency.</div>
   </div>
 
   <div class="qso">
@@ -516,6 +519,20 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
       <div class="xline tx"><span class="dir">TOOL</span><span class="txt">disconnect → Disconnected from /dev/cu.usbmodem2101.</span></div>
     </div>
     <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;A device that talks on its own has no prompt and no query; read_available with a longer timeout captures a window (capture_start would keep all of it in a file), and disconnect frees the port for the Arduino IDE.</div>
+  </div>
+  <div class="qso">
+    <div class="qh"><span class="qt">5 · Rotator: read the heading, turn to Europe, confirm</span><span class="qm">9600 8N1 · CR · yaesu-rotator preset</span></div>
+    <div class="qbody">
+      <div class="xline note"><span class="dir"></span><span class="txt">You: &ldquo;Where's the beam pointing? Turn it to 45 degrees and tell me when it's there.&rdquo; (the rig is still open as <span class="mono">rig</span>)</span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.usbserial-AB12", preset="yaesu-rotator", name="rotator")  → Connected 'rotator' … Other open connections: rig.</span></div>
+      <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text(rotator_build("azimuth")) → sends "C"+CR, reads until "\r"</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">Matched prompt '\r' after 6 bytes: +0180   → rotator_parse: azimuth 180° (GS-232A)</span></div>
+      <div class="xline tx"><span class="dir">SEND</span><span class="txt">send_text(rotator_build("move", azimuth=45)) → "M045"+CR (moves reply nothing)</span></div>
+      <div class="xline note"><span class="dir"></span><span class="txt">The agent waits, then re-reads the position until it stops changing.</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">query_text("C") → +0045 → azimuth 45°</span></div>
+      <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;Beam is on 045. The rig connection is untouched; say the word and I'll read its frequency.&rdquo;</span></div>
+    </div>
+    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;Two ports open at once, each with its own preset; the rotator's CR line ending and "\r" reply terminator came from the preset; a move is confirmed by reading, never assumed.</div>
   </div>
 </div>
 
@@ -579,6 +596,10 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong mono">get_transcript</td><td class="mono">last_bytes [4000]</td><td>Tail of everything received (rolling 256 KB); also the resource <span class="mono">serial://transcript/{name}</span></td></tr>
     <tr><td class="strong mono">port_in_use_by</td><td class="mono">port</td><td>Process holding it (macOS/Linux)</td></tr>
     <tr><td class="strong mono">detect_baud</td><td class="mono">port · probe [""] · probe_line_ending [CR] · candidates · settle [0.5 s]</td><td>Rates ranked by readable reply, best guess</td></tr>
+    <tr><td class="strong mono">cat_build</td><td class="mono">command · value · frequency_mhz · flavor kenwood|elecraft|yaesu [kenwood]</td><td>The ';' string, with its meaning</td></tr>
+    <tr><td class="strong mono">cat_parse</td><td class="mono">reply · flavor [kenwood]</td><td>Each reply decoded: rig model, MHz, mode, IF fields, ?/E/O errors</td></tr>
+    <tr><td class="strong mono">rotator_build</td><td class="mono">action azimuth|position|elevation|move|move_azel|stop|…|speed · azimuth · elevation · speed</td><td>The GS-232 command</td></tr>
+    <tr><td class="strong mono">rotator_parse</td><td class="mono">reply</td><td>Azimuth/elevation in degrees, or the rejection</td></tr>
     <tr><td class="strong mono">civ_build</td><td class="mono">command · data · rig [94] · controller [E0]</td><td>Frame as hex, with its meaning</td></tr>
     <tr><td class="strong mono">civ_parse</td><td class="mono">hex_bytes · controller [E0]</td><td>Each frame decoded: echo or reply, frequency, mode, OK/NG, PTT</td></tr>
     <tr><td class="strong mono">civ_freq</td><td class="mono">mhz | bcd_hex</td><td>The other representation</td></tr>
@@ -602,7 +623,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   has been verified; it does not claim more.</p>
   <p>serial-console-mcp began as a generic console tool for network craft ports and radio gear
   and was rewritten for this release around the background-reader model in chapter D. The
-  0.2.0 code is verified by a 50-case test suite driving a simulated serial port, by a live
+  0.2.0 code is verified by a 54-case test suite driving a simulated serial port, by a live
   MCP transport handshake, and by continuous integration on Linux, macOS and Windows. The
   worked sessions in chapter E are representative walk-throughs of the tool flow, not
   recordings from hardware; a live-port pass is the next milestone, and this guide will say so
@@ -612,7 +633,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong">serial-console-mcp</td><td class="mono">github.com/sbrunner-atx/serial-console-mcp</td></tr>
     <tr><td class="strong">Installers</td><td class="mono">GitHub Releases · SerialConsoleMCP-Setup.exe · SerialConsoleMCP-0.1.1.pkg</td></tr>
     <tr><td class="strong">PyPI</td><td class="mono">pypi.org/project/serial-console-mcp · uvx serial-console-mcp</td></tr>
-    <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/ (server, presets, civ) · tests/test_serial_console.py</td></tr>
+    <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/ (server, presets, cat, civ, rotator) · tests/test_serial_console.py</td></tr>
     <tr><td class="strong">Operating skill</td><td class="mono">skills/serial-console/SKILL.md</td></tr>
     <tr><td class="strong">Live-port harness</td><td class="mono">_hosttest/run_live.py &lt;steps.json&gt;</td></tr>
     <tr><td class="strong">This guide's sources</td><td class="mono">docs/brand/ (HTML + CSS, WeasyPrint)</td></tr>

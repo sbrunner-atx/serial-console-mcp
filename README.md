@@ -54,7 +54,9 @@ interactive CLIs properly.
 | `set_lines` / `pulse_line` / `send_break` | Drive DTR and RTS (PTT, Arduino reset), send BREAK |
 | `capture_start` / `capture_stop` / `get_transcript` | Log a session to a file (raw or timestamped TX/RX); re-read the rolling transcript |
 | `port_in_use_by` / `detect_baud` | Which program holds a port; which baud rate produces readable text |
+| `cat_build` / `cat_parse` | Kenwood, Elecraft and Yaesu `;` commands: build a frequency set, decode ID, FA, MD, IF and error replies |
 | `civ_build` / `civ_parse` / `civ_freq` | Icom CI-V frames: build, decode (echo vs reply, BCD frequency, mode, PTT), convert |
+| `rotator_build` / `rotator_parse` | GS-232 rotator commands (read, move, stop, speed) and position replies |
 | `clear_buffer` / `status` | Housekeeping; status shows every open port with control-line states |
 
 Ports are opened by name ("rig", "rotator"); tools default to the most recently
@@ -136,6 +138,8 @@ Plain-English requests work. Some examples:
 - "What baud rate is this thing?" (`detect_baud`).
 - "Key the rig for two seconds" (`pulse_line("RTS", 2000)`, after you confirm).
 - "Ask the IC-7300 for its frequency" (`civ_build`, `send_hex`, `read_available`, `civ_parse`).
+- "What is the TS-590 tuned to?" (`query_text("FA;")`, `cat_parse`).
+- "Turn the rotator to 45 degrees and confirm" (`rotator_build`, `query_text`, `rotator_parse`).
 - "Record this console session to a file."
 - "Reconnect to the same port as last time." (it remembers)
 - "Send a return, then read until the login prompt."

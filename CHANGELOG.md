@@ -39,8 +39,14 @@ working unchanged; every new argument has a default.
 - **Diagnostics.** `port_in_use_by(port)` names the process holding a port
   (lsof); the busy-port hint on `connect` includes it. `detect_baud(port)`
   tries common rates and ranks them by how readable the reply is.
+- **Text CAT helpers.** `cat_build` and `cat_parse` for the Kenwood, Elecraft
+  and Yaesu `;` protocols: frequency sets, rig ID to model, FA/FB, MD, IF
+  decoding, and the `?; E; O;` error replies.
 - **Icom CI-V helpers.** `civ_build`, `civ_parse` (frames, echo vs. reply,
   BCD frequency, mode, OK/NG, PTT) and `civ_freq`.
+- **Rotator helpers.** `rotator_build` and `rotator_parse` for GS-232A/B:
+  read, move, move with elevation, stop, jog, speed; `+0180`, `+0180+0045`
+  and `AZ=180 EL=045` replies.
 - **Read-only mode.** `SERIAL_CONSOLE_READ_ONLY=1` refuses writes except
   read-style commands (show/display/get, two-letter CAT reads, CI-V read
   frames) and refuses control-line changes; `SERIAL_CONSOLE_ALLOW` overrides
@@ -56,7 +62,7 @@ working unchanged; every new argument has a default.
 - `reconnect_last(name)` reopens a named remembered connection; the remembered
   file now holds every connection by name (0.1.x files are read transparently).
 - The unused `timeout` argument of `connect` is gone.
-- 24 tools (was 11); 50 tests.
+- 28 tools (was 11); 54 tests.
 
 ## [0.1.1] - 2026-09-15
 

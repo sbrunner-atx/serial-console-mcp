@@ -70,7 +70,7 @@ except ImportError:
 
 from mcp.server.fastmcp import FastMCP
 
-from . import civ, configure
+from . import cat, civ, configure, rotator
 from .presets import PRESETS
 from .presets import describe as describe_presets
 
@@ -119,7 +119,7 @@ READ_ONLY = _env_flag("SERIAL_CONSOLE_READ_ONLY")
 _DEFAULT_ALLOW = (
     r"^(?:|\?|help|show(?:\s.*)?|display(?:\s.*)?|dir|ls(?:\s.*)?|cat\s.*|ping\s.*|"
     r"traceroute\s.*|get(?:\s.*)?|exit|quit|logout|enable|terminal length 0|"
-    r"set cli screen-length 0|(?!TX|RX)[A-Z]{2};?)$"
+    r"set cli screen-length 0|(?!TX|RX)[A-Z]{2};?|C2?|B|H)$"
 )
 ALLOW_RE = re.compile(os.environ.get("SERIAL_CONSOLE_ALLOW") or _DEFAULT_ALLOW, re.IGNORECASE)
 try:
@@ -1530,6 +1530,68 @@ def civ_freq(mhz: float | None = None, bcd_hex: str | None = None) -> str:
             return f"Not valid BCD: {e}"
         return f"{bcd_hex} = {hz / 1e6:.6f} MHz"
     return "Give mhz or bcd_hex."
+
+
+@mcp.tool()
+def cat_build(command: str, value: str = "", frequency_mhz: float | None = None,
+              flavor: Literal["kenwood", "elecraft", "yaesu"] = "kenwood") -> str:
+    """Build a ';'-terminated text CAT command (Kenwood, Elecraft, Yaesu) for
+    query_text or send_text with line_ending="NONE".
+
+    Common commands: ID (rig id), FA/FB (VFO A/B frequency; empty value = read),
+    MD (mode; read, or set with the family's code), IF (full status), PS (power),
+    TX/RX, AI0 (silence auto-info), SM0 (S-meter), PC (output power).
+
+    Args:
+        command: Two letters, e.g. "FA".
+        value: Digits/letters to append for a set, e.g. "2" for MD2 (USB). Empty
+            = read.
+        frequency_mhz: For FA/FB sets: the frequency; formatted as 11 digits of
+            Hz (Kenwood/Elecraft) or 9 (Yaesu).
+        flavor: Which family's conventions: "kenwood" (default), "elecraft",
+            "yaesu".
+    """
+    try:
+        wire = cat.build(command, value, frequency_mhz, flavor)
+    except ValueError as e:
+        return f"Could not build: {e}"
+    return f"{wire}\n({cat.describe(wire, flavor)})"
+
+
+@mcp.tool()
+def cat_parse(reply: str, flavor: Literal["kenwood", "elecraft", "yaesu"] = "kenwood") -> str:
+    """Decode ';'-terminated text CAT replies: rig id to model, FA/FB to MHz, MD
+    to mode name, IF to frequency/mode/VFO/split/TX state, and the ?; E; O;
+    error answers. Pass the text returned by query_text.
+    """
+    return cat.describe(reply, flavor)
+
+
+@mcp.tool()
+def rotator_build(action: Literal["azimuth", "position", "elevation", "move", "move_azel",
+                                  "stop", "stop_azimuth", "stop_elevation", "left", "right",
+                                  "up", "down", "speed", "help"],
+                  azimuth: int | None = None, elevation: int | None = None,
+                  speed: int | None = None) -> str:
+    """Build a Yaesu GS-232A/B rotator command for send_text (CR) or query_text.
+
+    Actions: "azimuth" (C, read), "position" (C2, read az+el), "elevation" (B),
+    "move" (M<az>), "move_azel" (W<az> <el>), "stop"/"stop_azimuth"/
+    "stop_elevation", "left"/"right"/"up"/"down" (run until stop), "speed"
+    (X1..X4), "help". Reads reply immediately; moves reply nothing, so read the
+    position afterwards to confirm.
+    """
+    try:
+        return rotator.build(action, azimuth, elevation, speed)
+    except ValueError as e:
+        return f"Could not build: {e}"
+
+
+@mcp.tool()
+def rotator_parse(reply: str) -> str:
+    """Decode a GS-232 reply into azimuth/elevation degrees ("+0180",
+    "+0180+0045", "AZ=180 EL=045") or the ?> rejection."""
+    return rotator.describe(reply)
 
 
 # ----------------------------------------------------------------------------
