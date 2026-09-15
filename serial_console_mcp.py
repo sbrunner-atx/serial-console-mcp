@@ -89,7 +89,7 @@ _LINE_ENDINGS = {"CR": "\r", "CRLF": "\r\n", "LF": "\n", "NONE": ""}
 _PARITY = {"N": serial.PARITY_NONE, "E": serial.PARITY_EVEN, "O": serial.PARITY_ODD}
 _STOPBITS = {1: serial.STOPBITS_ONE, 1.5: serial.STOPBITS_ONE_POINT_FIVE,
              2: serial.STOPBITS_TWO}
-_SETTINGS_KEYS = ("port", "baud", "bytesize", "parity", "stopbits", "timeout")
+_SETTINGS_KEYS = ("port", "baud", "bytesize", "parity", "stopbits", "rtscts", "xonxoff", "timeout")
 
 LineEnding = Literal["CR", "CRLF", "LF", "NONE"]
 Parity = Literal["N", "E", "O"]
@@ -246,8 +246,17 @@ def _write(payload: bytes) -> str | None:
         _port.write(payload)
         _port.flush()
     except Exception as e:
-        return f"Write failed: {e}"
+        hint = ""
+        if isinstance(e, serial.SerialTimeoutException) and getattr(_port, "rtscts", False):
+            hint = (" RTS/CTS flow control is on and the device never asserted CTS; "
+                    "check the cable wiring or reconnect with rtscts=False.")
+        return f"Write failed: {e}.{hint}"
     return None
+
+
+def _flow_desc(rtscts: bool, xonxoff: bool) -> str:
+    parts = [n for n, on in (("RTS/CTS", rtscts), ("XON/XOFF", xonxoff)) if on]
+    return "+".join(parts) if parts else "none"
 
 
 def _render(data: bytes) -> str:
@@ -295,21 +304,30 @@ def connect(
     bytesize: int = 8,
     parity: Parity = "N",
     stopbits: float = 1,
+    rtscts: bool = False,
+    xonxoff: bool = False,
     timeout: float = 1.0,
 ) -> str:
     """Open a serial port and start the background reader.
 
-    Common console defaults: network gear (Juniper/Cisco craft ports) is almost
-    always 9600 8N1. Many rigs use 4800/9600/19200/38400/57600/115200 8N1.
+    The defaults are 9600 baud, 8 data bits, no parity, 1 stop bit, no flow
+    control ("9600 8N1"), which is what most console/craft ports and much radio
+    gear expect. Every setting can be overridden when the user says so, e.g.
+    "38400 with XON/XOFF" -> baud=38400, xonxoff=True.
 
     Args:
         port: System port name, e.g. "COM4" (Windows), "/dev/cu.usbserial-10"
             (macOS), or "/dev/ttyUSB0" (Linux). Get exact names from
             `list_serial_ports`.
-        baud: Baud rate. Check the device's console/CAT menu if unsure.
-        bytesize: Data bits (5,6,7,8). Almost always 8.
+        baud: Baud rate. Common values: 1200, 2400, 4800, 9600, 19200, 38400,
+            57600, 115200. Check the device's console/CAT menu if unsure.
+        bytesize: Data bits: 5, 6, 7, or 8. Almost always 8.
         parity: "N" none, "E" even, "O" odd. Almost always "N".
         stopbits: 1, 1.5, or 2. Almost always 1.
+        rtscts: Hardware (RTS/CTS) flow control. Off by default; only turn on if
+            the device's manual says so and the cable carries those lines.
+        xonxoff: Software (XON/XOFF) flow control. Off by default. Do not use
+            for binary protocols (it swallows 0x11 / 0x13 bytes).
         timeout: Reserved for compatibility; the reader thread polls the port on a
             fixed short interval regardless, so reads never block Claude.
     """
@@ -333,6 +351,8 @@ def connect(
             stopbits=_STOPBITS[stopbits],
             timeout=_READER_POLL,  # short, so the reader stays responsive to stop
             write_timeout=_WRITE_TIMEOUT,
+            rtscts=rtscts,
+            xonxoff=xonxoff,
         )
     except ValueError as e:
         # pyserial rejects impossible settings (baud 0, 9 data bits, ...) this way.
@@ -362,10 +382,12 @@ def connect(
     _start_reader()
     _remember({
         "port": port, "baud": baud, "bytesize": bytesize,
-        "parity": parity, "stopbits": stopbits, "timeout": timeout,
+        "parity": parity, "stopbits": stopbits,
+        "rtscts": rtscts, "xonxoff": xonxoff, "timeout": timeout,
     })
     return (
-        f"Connected to {port} at {baud} baud ({bytesize}{parity}{stopbits}). "
+        f"Connected to {port} at {baud} baud ({bytesize}{parity}{stopbits}, "
+        f"flow control {_flow_desc(rtscts, xonxoff)}). "
         f"Background reader running. For an interactive console, try "
         f'read_until_prompt (send a newline first to draw a fresh prompt).'
     )
@@ -583,8 +605,9 @@ def status() -> str:
         reader = "STOPPED" + (f" ({_reader_error})" if _reader_error else "") + \
             " — run disconnect then connect again"
     extra = f" ({dropped} older bytes were discarded because the buffer filled up)" if dropped else ""
+    flow = _flow_desc(getattr(_port, "rtscts", False), getattr(_port, "xonxoff", False))
     return (f"Connected: {_port.port} at {_port.baudrate} baud, "
-            f"{_port.bytesize}{_port.parity}{_port.stopbits}. "
+            f"{_port.bytesize}{_port.parity}{_port.stopbits}, flow control {flow}. "
             f"Reader {reader}; {buffered} bytes buffered{extra}.")
 
 

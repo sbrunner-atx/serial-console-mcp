@@ -41,7 +41,7 @@ interactive CLIs properly.
 | Tool | What it does |
 | --- | --- |
 | `list_serial_ports` | Enumerate ports with description and USB hardware id |
-| `connect` / `reconnect_last` / `disconnect` | Open a port (baud, data bits, parity, stop bits); remembers the last one |
+| `connect` / `reconnect_last` / `disconnect` | Open a port. Defaults to 9600 8N1, no flow control; baud, data bits, parity, stop bits, RTS/CTS and XON/XOFF are all settable by asking. Remembers the last one |
 | `send_text` | Write an ASCII command with CR / LF / CRLF / no line ending. Write-only |
 | `send_hex` | Write raw bytes given as hex (Icom CI-V and other binary protocols) |
 | `read_until_prompt` | Return buffered output up to a literal or regex prompt, leaving the rest |
@@ -94,6 +94,7 @@ Plain-English requests work. Some examples:
 
 - "List my serial ports."
 - "Connect to the console on /dev/cu.usbserial-10 at 9600 baud."
+- "Connect to /dev/cu.BLTH at 38400, 8 data bits, no parity, 1 stop bit, XON/XOFF flow control."
 - "Reconnect to the same port as last time." (it remembers)
 - "Send a return, then read until the login prompt."
 - "Log in as admin and run `show interfaces terse`, then show me all of it."

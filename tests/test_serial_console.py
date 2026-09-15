@@ -24,7 +24,7 @@ class FakeSerial:
     """Stands in for serial.Serial: scripted RX bytes + a TX log."""
 
     def __init__(self, port, baudrate, bytesize, parity, stopbits, timeout,
-                 write_timeout=None):
+                 write_timeout=None, rtscts=False, xonxoff=False):
         if baudrate <= 0:
             raise ValueError("Not a valid baudrate: %r" % baudrate)
         if port == "/dev/busy":
@@ -36,6 +36,7 @@ class FakeSerial:
         self.port, self.baudrate = port, baudrate
         self.bytesize, self.parity, self.stopbits = bytesize, parity, stopbits
         self.timeout, self.write_timeout = timeout, write_timeout
+        self.rtscts, self.xonxoff = rtscts, xonxoff
         self.is_open = True
         self.tx = bytearray()
         self._rx = bytearray()
@@ -127,6 +128,34 @@ def test_connect_status_disconnect():
     assert m.disconnect() == "Nothing to disconnect."
 
 
+def test_connect_defaults_are_9600_8n1_no_flow_control():
+    p = _connect()
+    assert (p.baudrate, p.bytesize, p.parity, p.stopbits) == (9600, 8, "N", 1)
+    assert (p.rtscts, p.xonxoff) == (False, False)
+    assert m.status().startswith("Connected: /dev/fake at 9600 baud, 8N1, flow control none.")
+
+
+def test_connect_flow_control_and_line_settings():
+    out = m.connect("/dev/fake", baud=38400, bytesize=7, parity="E", stopbits=2,
+                    rtscts=False, xonxoff=True)
+    assert out.startswith("Connected to /dev/fake at 38400 baud (7E2, flow control XON/XOFF)")
+    p = m._port
+    assert (p.baudrate, p.bytesize, p.parity, p.stopbits, p.rtscts, p.xonxoff) == \
+        (38400, 7, "E", 2, False, True)
+    assert "flow control XON/XOFF" in m.status()
+    m.connect("/dev/fake", rtscts=True, xonxoff=True)
+    assert "flow control RTS/CTS+XON/XOFF" in m.status()
+
+
+def test_write_timeout_with_rtscts_gets_hint():
+    p = _connect(rtscts=True)
+
+    def boom(_b):
+        raise serial.SerialTimeoutException("Write timeout")
+    p.write = boom
+    assert "never asserted CTS" in m.send_text("x")
+
+
 def test_connect_replaces_existing_port():
     p1 = _connect("/dev/one")
     p2 = _connect("/dev/two")
@@ -202,9 +231,9 @@ def test_write_failure_is_reported():
     def boom(_b):
         raise serial.SerialTimeoutException("Write timeout")
     p.write = boom
-    assert m.send_text("x") == "Write failed: Write timeout"
-    assert m.send_hex("00") == "Write failed: Write timeout"
-    assert m.query_text("x") == "Write failed: Write timeout"
+    assert m.send_text("x") == "Write failed: Write timeout."
+    assert m.send_hex("00") == "Write failed: Write timeout."
+    assert m.query_text("x") == "Write failed: Write timeout."
 
 
 # --- reading -------------------------------------------------------------------------
@@ -338,7 +367,7 @@ def test_reconnect_last_round_trip(tmp_path):
     assert saved["port"] == "/dev/fake" and saved["baud"] == 38400
     m._last_settings = None  # simulate a fresh process
     out = m.reconnect_last()
-    assert out.startswith("Connected to /dev/fake at 38400 baud (8E2)")
+    assert out.startswith("Connected to /dev/fake at 38400 baud (8E2, flow control none)")
 
 
 def test_reconnect_last_ignores_unknown_keys(tmp_path):
