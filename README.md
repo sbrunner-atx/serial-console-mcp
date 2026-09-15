@@ -63,7 +63,8 @@ interactive CLIs properly.
 Ports are opened by name ("rig", "rotator"); tools default to the most recently
 used one. Each connection has a terminal mode: `dumb` (raw bytes, the default),
 `ansi` (colours and escape sequences stripped, CR/backspace overwrites applied,
-used by the console presets), or `xterm`/`vt100` (a real screen you can read
+prompts matched on the line as displayed even after a device redraws it with
+spaces and backspaces; used by the console presets), or `xterm`/`vt100` (a real screen you can read
 with `screen`; needs `pip install 'serial-console-mcp[screen]'`, included in
 the installers). The receive buffer is capped at 4 MB per port; if a device streams for
 hours unread, the oldest bytes are dropped and `status` says how many.

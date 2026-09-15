@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `---(more NN%)---`; the skill now matches the prefix and says to press `q`
   before typing, because keys at the pager are pager commands.
 
+### Fixed
+- Prompt matching in `ansi`, `vt100` and `xterm` mode sees the last line as the
+  terminal shows it, up to the cursor. Junos redraws an edited line with a CR,
+  padding spaces and backspaces after `?`, Tab completion and Ctrl-U, so the
+  bytes ended in `\b` and `read_until_prompt` and `expect` timed out on any
+  prompt ending in `$`, the `juniper-craft` default `[#>%] ?$` included (seen
+  on the EX2200-C). A line that has ended, or that a bare CR has just rewound,
+  is never taken for a prompt; `dumb` mode still matches the bytes exactly.
+  Field Guide chapter 05; the `junos-operating` skill no longer needs a bare
+  return after `?` or Ctrl-U.
+
 ### Verified
 - Live session on 2026-09-15: the 0.3.0 PyPI package, launched via `uvx` as
   Claude Desktop does, drove a Juniper EX2200-C (Junos 15.1R6.7) console over

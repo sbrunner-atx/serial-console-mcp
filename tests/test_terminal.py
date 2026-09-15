@@ -54,6 +54,16 @@ def test_render_erase_line_and_clear():
     assert t.render(b"\x1b[10Gcol10") == "         col10"
 
 
+def test_cursor_line_and_line_start():
+    assert t.cursor_line(b"\rroot@sw-office> show system    \x08\x08\x08") == \
+        "root@sw-office> show system "
+    assert t.cursor_line(b"\rroot@sw-office>" + b" " * 15 + b"\x08" * 14) == "root@sw-office> "
+    assert t.cursor_line(b"Total 3 #\r") == ""  # CRLF split across reads: not a prompt
+    assert t.line_start(b"no break") == 0
+    assert t.line_start(b"a\r\nb") == 3
+    assert t.line_start(b"a\nb\xfb\nc") == 2  # count byte 10 of a cursor-left marker is no LF
+
+
 def test_render_plain_text_unchanged():
     out = t.render(b"show version\r\nJunos: 21.4\r\nuser@r1> ")
     assert out == "show version\nJunos: 21.4\nuser@r1>"
@@ -114,6 +124,77 @@ def test_connect_ansi_mode_escape_split_across_chunks():
     p.feed(b"31mred\x1b[0m after# ")
     out = m.read_until_prompt("# ", timeout=2)
     assert out.endswith("before red after#")
+
+
+# Junos 15.1 on an EX2200-C redraws the input line instead of printing a fresh prompt
+# (captures/ex2200-skill-lookup.log, 2026-09-15).
+HELP_REDRAW = (b"{master:0}\r\n", b"\rroot@sw-office> show system    \x08\x08\x08")  # after ?
+CTRL_U_REDRAW = (b"\rr", b"oot@sw-office>               " + b"\x08" * 14)  # after Ctrl-U
+RETURN_ECHO = b"\r\n"  # arrived in the same read as the Ctrl-U redraw: the bare return sent next
+
+
+def test_ansi_prompt_matches_line_redrawn_after_help():
+    p = _connect(preset="juniper-craft")
+    default = m._conns["fake"].prompt
+    for chunk in HELP_REDRAW:
+        p.feed(chunk)
+    _wait_reader_drained(p)
+    out = m.read_until_prompt(r"> show system $", regex=True, timeout=2)
+    assert out.startswith("Matched prompt '> show system $' after 47 bytes"), out
+    assert out.endswith("{master:0}\nroot@sw-office> show system")
+    assert bytes(m._conns["fake"].rx) == b""  # the bytes that drew the line are consumed
+    for chunk in HELP_REDRAW:
+        p.feed(chunk)
+    _wait_reader_drained(p)
+    out = m.read_until_prompt(timeout=0.3)  # a half-typed command is not a bare prompt
+    assert out.startswith(f"Prompt {default!r} not seen"), out
+
+
+def test_ansi_prompt_matches_line_redrawn_after_ctrl_u():
+    p = _connect(preset="juniper-craft")
+    default = m._conns["fake"].prompt
+    assert m._conns["fake"].terminal == "ansi" and default == "[#>%] ?$"
+    for chunk in CTRL_U_REDRAW:
+        p.feed(chunk)
+    _wait_reader_drained(p)
+    out = m.read_until_prompt(timeout=2)
+    assert out.startswith(f"Matched prompt {default!r} after 45 bytes"), out
+    assert out.endswith("root@sw-office>")
+    p.feed(RETURN_ECHO + b"\r\n{master:0}\r\nroot@sw-office> ")
+    out = m.read_until_prompt(timeout=2)
+    assert out.startswith(f"Matched prompt {default!r}")
+    assert out.endswith("\n{master:0}\nroot@sw-office>")
+
+
+def test_ansi_prompt_ignores_a_redrawn_line_once_it_has_ended():
+    p = _connect(preset="juniper-craft")
+    p.feed(CTRL_U_REDRAW[0])
+    p.feed(CTRL_U_REDRAW[1] + RETURN_ECHO)  # as captured: the return's echo ends the line
+    _wait_reader_drained(p)
+    out = m.read_until_prompt(timeout=0.3)
+    assert "not seen within 0.3s" in out, out
+
+
+def test_dumb_prompt_matching_stays_byte_exact():
+    p = _connect(prompt="[#>%] ?$", prompt_regex=True)
+    assert m._conns["fake"].terminal == "dumb"
+    for chunk in CTRL_U_REDRAW:
+        p.feed(chunk)
+    _wait_reader_drained(p)
+    out = m.read_until_prompt(timeout=0.3)
+    assert out.startswith("Prompt '[#>%] ?$' not seen within 0.3s. Got 45 bytes"), out
+    assert "\x08" * 14 in out  # bytes as received, backspaces and all
+    for chunk in HELP_REDRAW:
+        p.feed(chunk)
+    _wait_reader_drained(p)
+    out = m.read_until_prompt(r"> show system $", regex=True, timeout=0.3)
+    assert "not seen within 0.3s" in out, out
+    p.feed(b"\r\nroot@sw-office> ")  # a plain prompt still matches, leftover pushed back
+    p.feed(b"late")
+    _wait_reader_drained(p)
+    out = m.read_until_prompt("> ", timeout=2)
+    assert out.startswith("Matched prompt '> ' after 18 bytes")
+    assert bytes(m._conns["fake"].rx) == b"late"
 
 
 def test_console_presets_use_ansi_and_dumb_stays_raw():
