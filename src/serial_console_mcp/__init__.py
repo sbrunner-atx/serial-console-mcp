@@ -7,4 +7,4 @@ send-then-poll. Network craft ports, CAT radios, Icom CI-V, rotators,
 microcontrollers: anything on an RS-232 or USB-to-serial cable.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

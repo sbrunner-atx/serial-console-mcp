@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.sbrunner-atx/serial-console-mcp",
+  "description": "Drive a serial console from an MCP client: craft ports, CAT radios, Icom CI-V, rotators, MCUs.",
+  "repository": {
+    "url": "https://github.com/sbrunner-atx/serial-console-mcp",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "serial-console-mcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

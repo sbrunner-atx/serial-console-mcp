@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-15
+
+### Added
+- `server.json` and the README `mcp-name` marker so the package can be listed
+  in the official MCP Registry as `io.github.sbrunner-atx/serial-console-mcp`.
+
+### Changed
+- Release workflow publishes with a repository token secret and can be run by
+  hand; Trusted Publishing wiring kept.
+- Installer builds install the `[freeze]` extra (mcp[cli] is needed by
+  `--collect-all mcp`); Inno `[UninstallRun]` no longer uses a flag it rejects.
+
 ## [0.1.0] - 2026-09-14
 
 First public, experimental release.
