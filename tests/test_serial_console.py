@@ -48,15 +48,22 @@ class FakeSerial:
             return len(self._rx)
 
     def read(self, n):
-        with self._lock:
-            if self._rx:
-                out = bytes(self._rx[:n])
-                del self._rx[:n]
-                return out
-        if self.fail_reads:
-            raise serial.SerialException("device reports readiness to read but returned no data")
-        time.sleep(self.timeout)
-        return b""
+        # Like a real port: block up to `timeout`, but return as soon as any byte
+        # lands rather than always sleeping the full timeout. (A fake that slept
+        # the whole 100 ms added latency a real adapter doesn't have and made the
+        # settle-window tests racy on slow CI runners.)
+        deadline = time.time() + self.timeout
+        while True:
+            with self._lock:
+                if self._rx:
+                    out = bytes(self._rx[:n])
+                    del self._rx[:n]
+                    return out
+            if self.fail_reads:
+                raise serial.SerialException("device reports readiness to read but returned no data")
+            if time.time() >= deadline:
+                return b""
+            time.sleep(0.005)
 
     def write(self, b):
         self.tx.extend(b)
