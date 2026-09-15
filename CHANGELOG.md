@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-15
+
+Says what else the server is for: any device on a serial port, not only
+telecommunication equipment.
+
 ### Changed
 - Descriptions now also say what else the server is for: any device on a serial
   port, in raw, ANSI or VT100 mode, such as IoT gateways, alarm and control

@@ -46,7 +46,7 @@ Then compile `installer.iss` with Inno Setup (free). Output:
 if you have a code-signing cert, add a `SignTool` directive to avoid SmartScreen
 warnings (optional; unsigned works, just warns).
 
-## macOS  ->  SerialConsoleMCP-0.3.1.pkg
+## macOS  ->  SerialConsoleMCP-0.3.2.pkg
 
 Unsigned (testing):
 ```

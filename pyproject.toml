@@ -1,6 +1,6 @@
 [project]
 name = "serial-console-mcp"
-version = "0.3.1"
+version = "0.3.2"
 description = "AI for the configuration of telecommunication equipment over its serial console: Juniper and Cisco routers and switches, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, and GS-232 antenna rotators, plus any other serial device in raw, ANSI or VT100 mode: IoT gateways, alarm and control panels, instruments. An MCP server for Claude and other AI assistants."
 readme = "README.md"
 license = { text = "MIT" }

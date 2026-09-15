@@ -9,7 +9,7 @@
 set -euo pipefail
 
 APP_NAME="serial-console-mcp"
-VERSION="${VERSION:-0.3.1}"
+VERSION="${VERSION:-0.3.2}"
 IDENTIFIER="${IDENTIFIER:-org.stefanbrunner.serialconsolemcp}"
 INSTALL_LOCATION="/Library/Application Support/SerialConsoleMCP"
 
