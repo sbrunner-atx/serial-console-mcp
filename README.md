@@ -5,7 +5,7 @@
 **Let Claude drive your serial console.**
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
-[![PyPI](https://img.shields.io/pypi/v/serial-console-mcp.svg)](https://pypi.org/project/serial-console-mcp/)
+[![PyPI](https://img.shields.io/pypi/v/serial-console-mcp?label=pypi&cacheSeconds=3600)](https://pypi.org/project/serial-console-mcp/)
 &nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: experimental (0.1.1)**
 
 This adds a few tools to **Claude Desktop** so you can talk to anything on a serial
