@@ -119,14 +119,16 @@
       Servers are read at launch.</div></div>
   </div>
 
-  <h3>From source <span class="mono">developers</span></h3>
-  <pre>git clone https://github.com/sbrunner-atx/serial-console-mcp.git
-cd serial-console-mcp
-python3 -m venv .venv &amp;&amp; source .venv/bin/activate
-pip install -r requirements.txt
-python configure_claude.py --command "$PWD/.venv/bin/python" --arg "$PWD/serial_console_mcp.py"</pre>
-  <p>Needs Python 3.10 or newer. The MCP SDK is pinned below 2.0; the 2.x line removed the
-  API this server uses. <code>python configure_claude.py --remove</code> undoes the registration.</p>
+  <h3>From PyPI <span class="mono">uv or pipx</span></h3>
+  <pre>uvx serial-console-mcp configure --command uvx --arg serial-console-mcp
+<span class="k"># or</span>
+pipx install serial-console-mcp
+serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
+  <p>Needs Python 3.10 or newer. <code>configure</code> writes the Claude Desktop entry, merging
+  with servers already there and backing up the old file;
+  <code>serial-console-mcp configure --remove</code> undoes it. Any MCP client can launch the same
+  command over stdio. Developers: <code>git clone</code>, <code>uv sync</code>,
+  <code>uv run pytest</code>.</p>
 
   <h3>Verify <span class="mono">thirty seconds</span></h3>
   <div class="numlist">
@@ -503,7 +505,8 @@ python configure_claude.py --command "$PWD/.venv/bin/python" --arg "$PWD/serial_
     <tr><th style="width:32%">Resource</th><th>Where</th></tr>
     <tr><td class="strong">serial-console-mcp</td><td class="mono">github.com/sbrunner-atx/serial-console-mcp</td></tr>
     <tr><td class="strong">Installers</td><td class="mono">GitHub Releases · SerialConsoleMCP-Setup.exe · SerialConsoleMCP-0.1.0.pkg</td></tr>
-    <tr><td class="strong">Server and tests</td><td class="mono">serial_console_mcp.py · tests/test_serial_console.py</td></tr>
+    <tr><td class="strong">PyPI</td><td class="mono">pypi.org/project/serial-console-mcp · uvx serial-console-mcp</td></tr>
+    <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/server.py · tests/test_serial_console.py</td></tr>
     <tr><td class="strong">Live-port harness</td><td class="mono">_hosttest/run_live.py &lt;steps.json&gt;</td></tr>
     <tr><td class="strong">This guide's sources</td><td class="mono">docs/brand/ (HTML + CSS, WeasyPrint)</td></tr>
     <tr><td class="strong">Sibling servers</td><td class="mono">fldigi-mcp · wsjtx-mcp · n3fjp-mcp · mcp-host-bridge</td></tr>

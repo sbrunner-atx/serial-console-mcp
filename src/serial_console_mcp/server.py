@@ -14,7 +14,8 @@ send-then-poll. Specialize it later for a specific device if you want, but this 
 enough to drive most gear by conversation.
 
 This runs as a HOST subprocess (stdio transport), launched by an entry in
-claude_desktop_config.json. It does NOT run inside Claude's sandbox, which is
+claude_desktop_config.json (console script `serial-console-mcp`, or the frozen
+installer binary). It does NOT run inside Claude's sandbox, which is
 exactly why it can see /dev/cu.* (macOS), COMx (Windows), or /dev/ttyUSB* (Linux).
 
 Interactive-console model
@@ -56,7 +57,7 @@ except ImportError:
 
 from mcp.server.fastmcp import FastMCP
 
-import configure_claude  # bundled so `serial-console-mcp configure ...` works in the frozen binary
+from . import configure  # `serial-console-mcp configure ...` writes the Claude Desktop entry
 
 mcp = FastMCP("serial-console")
 
@@ -150,7 +151,7 @@ def _not_ready() -> str | None:
 # Background reader thread + software buffer helpers
 # ----------------------------------------------------------------------------
 
-def _reader_loop(port: "serial.Serial", stop_event: threading.Event) -> None:
+def _reader_loop(port: serial.Serial, stop_event: threading.Event) -> None:
     """Continuously drain the OS serial buffer into `_rx_buffer` until stopped.
 
     Owning all reads in one place is what makes interactive consoles work: TX echo,
@@ -545,7 +546,9 @@ def read_available(read_timeout: float = 1.0) -> str:
 
 
 @mcp.tool()
-def query_text(data: str, line_ending: LineEnding = "CR", prompt: str = "", read_timeout: float = 5.0) -> str:
+def query_text(
+    data: str, line_ending: LineEnding = "CR", prompt: str = "", read_timeout: float = 5.0
+) -> str:
     """Convenience: clear the buffer, send an ASCII command, and read the reply.
 
     For the common "ask the device something and read its answer" case. If `prompt`
@@ -594,7 +597,8 @@ def status() -> str:
     if not _is_open():
         s = _last_settings or _recall()
         if s:
-            return f"Not connected. Last used: {s['port']} at {s['baud']} baud (try reconnect_last)."
+            return (f"Not connected. Last used: {s['port']} at {s['baud']} baud "
+                    f"(try reconnect_last).")
         return "Not connected, and no previous connection on record."
     with _rx_lock:
         buffered = len(_rx_buffer)
@@ -604,7 +608,9 @@ def status() -> str:
     else:
         reader = "STOPPED" + (f" ({_reader_error})" if _reader_error else "") + \
             " — run disconnect then connect again"
-    extra = f" ({dropped} older bytes were discarded because the buffer filled up)" if dropped else ""
+    extra = ""
+    if dropped:
+        extra = f" ({dropped} older bytes were discarded because the buffer filled up)"
     flow = _flow_desc(getattr(_port, "rtscts", False), getattr(_port, "xonxoff", False))
     return (f"Connected: {_port.port} at {_port.baudrate} baud, "
             f"{_port.bytesize}{_port.parity}{_port.stopbits}, flow control {flow}. "
@@ -634,10 +640,22 @@ def disconnect() -> str:
     return f"Disconnected from {name}."
 
 
-if __name__ == "__main__":
-    # `serial-console-mcp configure --command ... [--config-home ...]` -> write the
-    # Claude Desktop config entry and exit. Installers call this. With no args,
-    # Claude Desktop launches us and we run the stdio server.
-    if len(sys.argv) > 1 and sys.argv[1] == "configure":
-        raise SystemExit(configure_claude.main(sys.argv[2:]))
+def main(argv: list[str] | None = None) -> None:
+    """Console-script entry point (pyproject `[project.scripts]`) and frozen-binary entry.
+
+    `serial-console-mcp configure --command ... [--config-home ...]` writes the
+    Claude Desktop config entry and exits; installers call this. With no
+    arguments, Claude Desktop launches us and we run the stdio server.
+    """
+    args = sys.argv[1:] if argv is None else argv
+    if args and args[0] == "configure":
+        raise SystemExit(configure.main(args[1:]))
+    if args and args[0] in ("--version", "-V"):
+        from . import __version__
+        print(f"serial-console-mcp {__version__}")
+        return
     mcp.run()  # stdio transport by default
+
+
+if __name__ == "__main__":
+    main()

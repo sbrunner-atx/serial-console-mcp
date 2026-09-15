@@ -19,8 +19,8 @@ import sys
 
 _here = __file__.rsplit("/", 1)[0]
 sys.path.insert(0, _here + "/mcpshim")   # stub 'mcp' package
-sys.path.insert(0, _here + "/..")         # repo root: serial_console_mcp, configure_claude
-import serial_console_mcp as m  # noqa: E402
+sys.path.insert(0, _here + "/../src")     # the serial_console_mcp package
+from serial_console_mcp import server as m  # noqa: E402
 
 
 def run(steps):

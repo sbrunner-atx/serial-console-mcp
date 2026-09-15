@@ -16,8 +16,8 @@ INSTALL_LOCATION="/Library/Application Support/SerialConsoleMCP"
 python3 -m venv .venv
 # shellcheck disable=SC1091
 source .venv/bin/activate
-pip install --quiet -r requirements.txt pyinstaller
-pyinstaller --onefile --name "$APP_NAME" --collect-all mcp serial_console_mcp.py
+pip install --quiet . pyinstaller
+pyinstaller --onefile --name "$APP_NAME" --collect-all mcp --collect-all serial_console_mcp packaging/entry.py
 
 # Sign the Mach-O with hardened runtime (required for notarization).
 if [ -n "${SIGN_IDENTITY_APP:-}" ]; then

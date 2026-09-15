@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-configure_claude.py
-===================
+serial_console_mcp.configure
+============================
 Registers (or removes) serial-console-mcp in Claude Desktop by editing exactly one
 entry in claude_desktop_config.json. Creates the file if missing, preserves any
 servers already there, and backs up the old file first.
 
 Usable three ways:
   * imported  -> write_config(command, args, remove=False, config_home=None)
-  * as a CLI  -> python configure_claude.py --command "/path/to/serial-console-mcp"
-  * via the frozen server binary -> serial-console-mcp configure --command "<binary>"
+  * as a CLI  -> serial-console-mcp configure --command "/path/to/serial-console-mcp"
+                 (or: serial-console-mcp configure --command uvx --arg serial-console-mcp)
+  * python -m serial_console_mcp.configure --command ...
 
 --config-home lets an installer that runs as root point writes at the real
 user's home directory.
@@ -33,9 +34,15 @@ def claude_config_path(config_home: Path | None = None) -> Path:
     if sys.platform == "darwin":
         return home / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json"
     if os.name == "nt":
-        appdata = Path(config_home) / "AppData" / "Roaming" if config_home else Path(os.environ["APPDATA"])
+        if config_home:
+            appdata = Path(config_home) / "AppData" / "Roaming"
+        else:
+            appdata = Path(os.environ["APPDATA"])
         return appdata / "Claude" / "claude_desktop_config.json"
-    base = (home / ".config") if config_home else Path(os.environ.get("XDG_CONFIG_HOME", home / ".config"))
+    if config_home:
+        base = home / ".config"
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME", home / ".config"))
     return base / "Claude" / "claude_desktop_config.json"
 
 

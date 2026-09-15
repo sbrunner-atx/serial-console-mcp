@@ -7,17 +7,14 @@ reads, error paths, and the remembered-connection round trip.
 from __future__ import annotations
 
 import json
-import sys
 import threading
 import time
-from pathlib import Path
 
 import pytest
 import serial
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import serial_console_mcp as m  # noqa: E402
-import configure_claude  # noqa: E402
+from serial_console_mcp import configure as configure_claude
+from serial_console_mcp import server as m
 
 
 class FakeSerial:
@@ -26,7 +23,7 @@ class FakeSerial:
     def __init__(self, port, baudrate, bytesize, parity, stopbits, timeout,
                  write_timeout=None, rtscts=False, xonxoff=False):
         if baudrate <= 0:
-            raise ValueError("Not a valid baudrate: %r" % baudrate)
+            raise ValueError(f"Not a valid baudrate: {baudrate!r}")
         if port == "/dev/busy":
             raise serial.SerialException(
                 "could not open port /dev/busy: [Errno 16] Resource busy")
@@ -61,7 +58,8 @@ class FakeSerial:
                     del self._rx[:n]
                     return out
             if self.fail_reads:
-                raise serial.SerialException("device reports readiness to read but returned no data")
+                raise serial.SerialException(
+                    "device reports readiness to read but returned no data")
             if time.time() >= deadline:
                 return b""
             time.sleep(0.005)

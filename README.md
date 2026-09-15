@@ -3,6 +3,7 @@
 **Let Claude drive your serial console.**
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
+[![PyPI](https://img.shields.io/pypi/v/serial-console-mcp.svg)](https://pypi.org/project/serial-console-mcp/)
 &nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: experimental (0.1.0)**
 
 This adds a few tools to **Claude Desktop** so you can talk to anything on a serial
@@ -78,24 +79,41 @@ WeasyPrint).
 That's the whole thing. There's no separate program to keep open and nothing to
 configure by hand.
 
-## Installing from source (developers)
+## Installing from PyPI
 
-Needs Python 3.10 or newer and `pyserial` + the MCP SDK (pinned `<2`):
+If you already have Python 3.10+ and [uv](https://docs.astral.sh/uv/) or pipx,
+you don't need the installer:
+
+```bash
+uvx serial-console-mcp --version                                   # fetches and runs it
+uvx serial-console-mcp configure --command uvx --arg serial-console-mcp
+```
+
+or
+
+```bash
+pipx install serial-console-mcp
+serial-console-mcp configure --command "$(which serial-console-mcp)"
+```
+
+`configure` writes a `serial-console` entry into `claude_desktop_config.json`
+(merging with whatever is already there and backing the old file up first).
+Quit and reopen Claude Desktop. `serial-console-mcp configure --remove` undoes
+it. Any other MCP client can launch the same command over stdio.
+
+## Installing from source (developers)
 
 ```bash
 git clone https://github.com/sbrunner-atx/serial-console-mcp.git
 cd serial-console-mcp
-python3 -m venv .venv && source .venv/bin/activate   # .venv\Scripts\activate on Windows
-pip install -r requirements.txt
-python configure_claude.py --command "$PWD/.venv/bin/python" --arg "$PWD/serial_console_mcp.py"
+uv sync                       # or: python3 -m venv .venv && . .venv/bin/activate && pip install -e . pytest
+uv run pytest                 # fake serial port, no hardware needed
+uv run serial-console-mcp configure --command "$PWD/.venv/bin/serial-console-mcp"
 ```
 
-That writes a `serial-console` entry into `claude_desktop_config.json` (merging
-with whatever is already there and backing the old file up first). Quit and
-reopen Claude Desktop. `python configure_claude.py --remove` undoes it.
-
-Run the tests with `pip install pytest && pytest`. They use a fake serial port,
-so no hardware is needed. See [BUILD.md](BUILD.md) for the installers.
+The package lives in `src/serial_console_mcp/`: `server.py` is the MCP server,
+`configure.py` the Claude Desktop registrar. See [BUILD.md](BUILD.md) for the
+installers.
 
 ## Using it
 

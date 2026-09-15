@@ -12,7 +12,8 @@ every manual step inside a clicker.
 
 ## One binary, two jobs
 
-`serial_console_mcp.py` is frozen into a single executable:
+The `serial_console_mcp` package (entry script `packaging/entry.py`) is frozen
+into a single executable:
 - launched with **no args** -> runs the MCP stdio server (what Claude calls);
 - launched as **`serial-console-mcp configure --command <self>`** -> writes the
   `claude_desktop_config.json` entry and exits (what the installer calls).
@@ -33,8 +34,8 @@ wrong home and silently does nothing. Both installers correct for this:
 
 ```
 python -m venv .venv && .venv\Scripts\activate
-pip install -r requirements.txt pyinstaller
-pyinstaller --onefile --name serial-console-mcp --collect-all mcp serial_console_mcp.py
+pip install . pyinstaller
+pyinstaller --onefile --name serial-console-mcp --collect-all mcp --collect-all serial_console_mcp packaging/entry.py
 ```
 Then compile `installer.iss` with Inno Setup (free). Output:
 `Output\SerialConsoleMCP-Setup.exe`. Edit `AppPublisher` (your name/callsign) and,
@@ -57,6 +58,22 @@ NOTARY_PROFILE="AC" \
 `NOTARY_PROFILE` is a `notarytool store-credentials` keychain profile. The
 package identifier is `org.stefanbrunner.serialconsolemcp` (override with
 `IDENTIFIER=...`). Uninstall: `./uninstall_macos.sh`.
+
+## PyPI
+
+`.github/workflows/release.yml` publishes the sdist and wheel to PyPI with
+Trusted Publishing (OIDC, no API token) whenever a GitHub Release is published.
+The tag must equal `v` + the version in `pyproject.toml`; the workflow checks.
+Release steps:
+
+```
+# bump version in pyproject.toml and src/serial_console_mcp/__init__.py, update CHANGELOG.md
+git tag vX.Y.Z && git push origin vX.Y.Z          # builds the installers
+gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <(sed -n '/^## \[X.Y.Z\]/,/^## \[/p' CHANGELOG.md)
+```
+
+One-time setup on pypi.org: Manage project → Publishing → add a trusted publisher
+for `sbrunner-atx/serial-console-mcp`, workflow `release.yml`, environment `release`.
 
 ## CI (both at once)
 
