@@ -330,7 +330,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
       <span class="mono">#</span> in a banner or in <span class="mono">show run | include #</span>.
       A regex such as <span class="mono">[\w.-]+[#&gt;] ?$</span> handles hostnames that change
       after <span class="mono">configure</span>. Set the prompt once on connect (or let the preset)
-      and every read uses it.</div></div>
+      and every read uses it. With no prompt anywhere, the read ends when the received text ends
+      in #, &gt;, $ or %.</div></div>
     <div class="item"><div class="no">3</div><div class="bd"><b>Clear before a command whose reply must be clean.</b>
       Syslog, interface flaps and a previous timed-out read leave bytes in the buffer.
       <code>send_text(…, clear_buffer_first=true)</code> or <code>query_text</code> discard them
@@ -439,7 +440,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   RX, which is what you want when debugging a protocol. <code>capture_stop</code> reports the
   file. Independently, the last 256 KB received on every connection is kept as a transcript, so
   <i>&ldquo;show me what the router printed earlier&rdquo;</i> works even after those bytes were
-  consumed by a read.</p>
+  consumed by a read. MCP clients that browse resources see the same transcript as
+  <span class="mono">serial://transcript/&lt;name&gt;</span>.</p>
 
   <h3>Read-only mode and idle auto-close</h3>
   <p>Two environment variables in the server's config entry: <code>SERIAL_CONSOLE_READ_ONLY=1</code>
@@ -477,40 +479,43 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <div class="qso">
     <div class="qh"><span class="qt">2 · Kenwood-style CAT: identify the rig and read the VFO</span><span class="qm">38400 8N1 · no line ending · query_text</span></div>
     <div class="qbody">
-      <div class="xline note"><span class="dir"></span><span class="txt">You: &ldquo;Connect to the radio at 38400 and tell me what it is and where it's tuned. Kenwood protocol, commands end in a semicolon.&rdquo;</span></div>
-      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.usbserial-1420", baud=38400)</span></div>
-      <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text("ID;", line_ending="NONE")</span></div>
-      <div class="xline rx"><span class="dir">READ</span><span class="txt">Reply (6 bytes): 'ID021;'   Hex: 49 44 30 32 31 3b</span></div>
-      <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text("FA;", line_ending="NONE")</span></div>
-      <div class="xline rx"><span class="dir">READ</span><span class="txt">Reply (14 bytes): 'FA00014074000;'</span></div>
+      <div class="xline note"><span class="dir"></span><span class="txt">You: &ldquo;Connect to the Kenwood at 38400 as rig and tell me what it is and where it's tuned.&rdquo;</span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.usbserial-1420", preset="kenwood-cat", name="rig", baud=38400)  → … Line ending NONE, prompt ';'</span></div>
+      <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text("ID;")   ← no line ending, reads until ';' — both from the preset</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">Matched prompt ';' after 6 bytes: ID021;</span></div>
+      <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text("FA;")</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">Matched prompt ';' after 14 bytes: FA00014074000;</span></div>
       <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;ID 021 is a TS-590S. VFO A is on 14.074 MHz.&rdquo;</span></div>
     </div>
-    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;No prompt exists, so query_text read until the line went quiet; NONE kept the CR off the wire, which Kenwood parsers reject.</div>
+    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;The preset supplied both things the dialog never asks for: no line ending (Kenwood parsers reject a CR) and ';' as the prompt, so each reply returned the instant it was complete.</div>
   </div>
 
   <div class="qso">
     <div class="qh"><span class="qt">3 · Icom CI-V: read the operating frequency in hex</span><span class="qm">19200 8N1 · send_hex → read_available</span></div>
     <div class="qbody">
       <div class="xline note"><span class="dir"></span><span class="txt">You: &ldquo;Ask the IC-7300 for its frequency. CI-V address 94.&rdquo;</span></div>
-      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.usbmodem14201", baud=19200)</span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.usbmodem14201", preset="icom-civ")  → 19200 8N1, flow control none</span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">civ_build("03", rig="94") → FE FE 94 E0 03 FD (read operating frequency)</span></div>
       <div class="xline tx"><span class="dir">SEND</span><span class="txt">send_hex("FE FE 94 E0 03 FD", clear_buffer_first=true)</span></div>
-      <div class="xline rx"><span class="dir">READ</span><span class="txt">read_available(1.0) → Received 11 bytes   Hex: fe fe e0 94 03 00 00 07 14 00 fd</span></div>
-      <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;Command 03 reply, BCD low byte first: 00 00 07 14 00 → 14.070000 MHz.&rdquo;</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">read_available(1.0) → Received 17 bytes   Hex: fe fe 94 e0 03 fd fe fe e0 94 03 00 00 07 14 00 fd</span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">civ_parse("fe fe 94 e0 03 fd fe fe e0 94 03 00 00 07 14 00 fd")</span></div>
+      <div class="xline rx"><span class="dir">READ</span><span class="txt">Frame 1: … → read operating frequency (echo of our own command; the rig's reply follows)\nFrame 2: to E0 from 94 cmd 03 data [00 00 07 14 00] → read operating frequency: 14.070000 MHz</span></div>
+      <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;The IC-7300 is on 14.070000 MHz.&rdquo; To QSY: civ_freq(mhz=14.074) gives the data bytes for civ_build("05", …).</span></div>
     </div>
-    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;Binary reply, so the hex view is the answer; XON/XOFF stayed off, so the 0x14 and 0x07 bytes arrived untouched.</div>
+    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;Binary protocol, so the hex view is the answer and civ_parse does the BCD arithmetic; the rig's USB interface echoes, and the parser labels the echo so it isn't mistaken for a reply. XON/XOFF stayed off, so the 0x14 and 0x07 bytes arrived untouched.</div>
   </div>
 
   <div class="qso">
     <div class="qh"><span class="qt">4 · Arduino sensor: watch a stream, then stop it</span><span class="qm">115200 8N1 · LF · read_available</span></div>
     <div class="qbody">
       <div class="xline note"><span class="dir"></span><span class="txt">You: &ldquo;Connect to the Arduino at 115200 and show me a few seconds of what it's printing.&rdquo;</span></div>
-      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.usbmodem2101", baud=115200)</span></div>
-      <div class="xline note"><span class="dir"></span><span class="txt">Opening the port toggles DTR and resets the board; the first bytes are its boot banner.</span></div>
+      <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.usbmodem2101", preset="arduino", baud=115200)</span></div>
+      <div class="xline note"><span class="dir"></span><span class="txt">Opening the port toggles DTR and resets the board; the first bytes are its boot banner. To reset it again later: pulse_line("DTR", ms=100, level=false).</span></div>
       <div class="xline rx"><span class="dir">READ</span><span class="txt">read_available(3.0) → Received 118 bytes   Text: 'BME280 ready\n23.4 C 1012.8 hPa 41%\n23.4 C 1012.8 hPa 41%\n23.5 C …'</span></div>
       <div class="xline tx"><span class="dir">TOOL</span><span class="txt">status → Reader running; 87 bytes buffered</span></div>
       <div class="xline tx"><span class="dir">TOOL</span><span class="txt">disconnect → Disconnected from /dev/cu.usbmodem2101.</span></div>
     </div>
-    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;A device that talks on its own has no prompt and no query; read_available with a longer timeout captures a window, and disconnect frees the port for the Arduino IDE.</div>
+    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;A device that talks on its own has no prompt and no query; read_available with a longer timeout captures a window (capture_start would keep all of it in a file), and disconnect frees the port for the Arduino IDE.</div>
   </div>
 </div>
 
@@ -571,7 +576,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong mono">send_break</td><td class="mono">ms [250]</td><td>Confirmation</td></tr>
     <tr><td class="strong mono">capture_start</td><td class="mono">path [auto] · format raw|annotated [raw]</td><td>The file being written</td></tr>
     <tr><td class="strong mono">capture_stop</td><td>none</td><td>File and bytes written</td></tr>
-    <tr><td class="strong mono">get_transcript</td><td class="mono">last_bytes [4000]</td><td>Tail of everything received (rolling 256 KB)</td></tr>
+    <tr><td class="strong mono">get_transcript</td><td class="mono">last_bytes [4000]</td><td>Tail of everything received (rolling 256 KB); also the resource <span class="mono">serial://transcript/{name}</span></td></tr>
     <tr><td class="strong mono">port_in_use_by</td><td class="mono">port</td><td>Process holding it (macOS/Linux)</td></tr>
     <tr><td class="strong mono">detect_baud</td><td class="mono">port · probe [""] · probe_line_ending [CR] · candidates · settle [0.5 s]</td><td>Rates ranked by readable reply, best guess</td></tr>
     <tr><td class="strong mono">civ_build</td><td class="mono">command · data · rig [94] · controller [E0]</td><td>Frame as hex, with its meaning</td></tr>
