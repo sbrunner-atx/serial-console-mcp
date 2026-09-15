@@ -36,6 +36,11 @@ prompt tells you the mode; never assume it.
 - One level up: `exit`. All the way to `#`: `end` (or Ctrl-Z).
 - Privileged back to user: `disable`. Log out: `exit` at `>` or `#`.
 - Leave the console as you found it: same mode, and logged out if it was.
+- There is no Unix shell under classic IOS to get out of. The prompts that mean
+  "not the CLI" are the boot monitor (`rommon 1 >`, `switch:`) and the setup
+  dialog (`Would you like to enter the initial configuration dialog?`). At a
+  boot monitor, stop and tell the user; answer `no` to the dialog only if the
+  user agrees.
 
 ## IOS has no commit: changes are live as you type
 
@@ -56,21 +61,36 @@ the next reload unless saved. That changes the discipline:
 
 ## Everyday show commands (privileged mode)
 
+IOS has neither `show system status` nor `show interfaces brief`; both answer
+`% Invalid input detected at '^' marker.` (`show interface brief` is NX-OS and
+IOS-XR.) Use these instead.
+
 | Question | Command |
 | --- | --- |
-| What is this box, what version | `show version`, `show inventory` |
-| Is it healthy | `show environment all`, `show logging | last 50`, `show processes cpu sorted` |
-| Interfaces up/down at a glance | `show ip interface brief`, `show interfaces status` (switches) |
+| What is this box, version, uptime, why it last reloaded | `show version` |
+| Hardware and serial numbers | `show inventory` |
+| Power, fans, temperature | `show environment all` |
+| CPU and memory | `show processes cpu sorted`, `show processes memory sorted` |
+| Interfaces up/down, one line each with IP | `show ip interface brief` |
+| Switch ports: connected, VLAN, speed | `show interfaces status` |
 | Interface descriptions | `show interfaces description` |
 | One interface in detail | `show interfaces GigabitEthernet1/0/1` |
 | VLANs and who is where | `show vlan brief`, `show mac address-table` |
 | Neighbours | `show cdp neighbors`, `show lldp neighbors` |
 | Routing | `show ip route`, `show ip route 10.0.0.0` |
-| The running config | `show running-config` (`| section interface` for a part) |
-| Saved vs running | `show startup-config`, `show archive config differences` (IOS-XE) |
+| The running config | `show running-config` (`\| section interface` for a part) |
+| Saved vs running | `show startup-config`, `show archive config differences` (IOS-XE with `archive`) |
+| Recent log | `show logging` (oldest first; `\| include %` for just the messages) |
 | Who else is on the box | `show users` |
 
-`do show ...` runs a show command from inside configuration mode.
+`do show ...` runs a show command from inside configuration mode. IOS pipes are
+`include`, `exclude`, `begin`, `section` and `count`; `last` and `no-more` are
+Junos and do not exist here.
+
+Not sure a command exists? End the line with `?` (`show ip ?`): IOS lists the
+options and retypes the line. Send it with `line_ending="NONE"`, read with
+`read_available`, then `send_keys(["ctrl-u"])` to clear it and a bare return
+to draw a clean prompt before the next command.
 
 ## Paging and long output
 
@@ -96,3 +116,8 @@ the user's explicit intent; `reload in 10` before path-affecting changes is
 the default, not an option. Read-only mode (`SERIAL_CONSOLE_READ_ONLY`)
 allows `show ...`, `enable`, `exit` and `terminal length 0`, and refuses the
 rest.
+
+## Verified
+
+Written from the Cisco IOS and IOS-XE command references. It has not yet been
+run against a Cisco on this bench; the Junos skill has.

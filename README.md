@@ -77,8 +77,8 @@ fldigi-mcp skills do; copy them into `~/.claude/skills/` or a project's
 | Skill | What it teaches |
 | --- | --- |
 | `serial-console` | The console model, the six rules, terminal modes, keys, presets |
-| `junos-operating` | Junos modes from the prompt (`%` shell, `>` operational, `#` configure), out of the BSD shell and back, `configure exclusive`, `show \| compare`, `commit confirmed`, `rollback`, everyday show commands |
-| `ios-operating` | IOS modes (`>`, `#`, `(config)#`), `enable`/`configure terminal`/`end`, `reload in 10` as the safety net, `write memory`, everyday show commands |
+| `junos-operating` | Junos modes from the prompt (`%` shell, `>` operational, `#` configure), out of the BSD shell and back, `configure exclusive`, `show \| compare`, `commit confirmed`, `rollback`, `cli -c` and `start shell`, health and interface show commands verified on an EX2200 (`show chassis routing-engine`, `show interfaces terse`/`brief`) |
+| `ios-operating` | IOS modes (`>`, `#`, `(config)#`), `enable`/`configure terminal`/`end`, `reload in 10` as the safety net, `write memory`, everyday show commands (`show ip interface brief`, `show processes cpu sorted`) |
 
 ### Environment variables
 

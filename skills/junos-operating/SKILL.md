@@ -25,15 +25,30 @@ prompt tells you the mode; never assume it.
 `{master:0}` above the prompt means a Virtual Chassis member; ignore it.
 `login:` means nobody is logged in: ask the user for credentials, never guess.
 
-## Out of the shell, and back
+## Out of the BSD shell, and back
 
-- Shell to CLI: `cli`. Expect `> $`.
-- CLI back to shell: `exit` at the `>` prompt when the session was started from
-  the shell (it returns to `%`). `start shell` from `>` also opens a shell.
-- If the console was found in the shell, put it back in the shell when done.
-  If it was found at `login:`, log out fully: `exit` until `login:` reappears.
-- Junos consoles log in as `root` only into the shell. `root` must type `cli`
-  to reach the CLI; other users land in the CLI directly.
+Junos runs on FreeBSD, and `root` always logs in to its shell, not to the CLI.
+On an EX2200 (Junos 15.1) the shell prompt is `root@sw-office:RE:0%`. Newer
+releases show a `sh` prompt such as `root@sw:~ #`, which ends in `#`: it is the
+shell, not configuration mode, when there is no `[edit]` line above it.
+
+| From | Send | You get |
+| --- | --- | --- |
+| Shell `%` | `cli` | The CLI, `root@sw>` (with `{master:0}` above it on EX) |
+| CLI started from the shell | `exit` | Back to the shell `%` |
+| CLI, any user | `start shell` | A shell inside the CLI session; `exit` returns to `>` |
+| Shell | `cli -c "show system uptime \| no-more"` | One CLI command's output, still in the shell |
+| Shell, finished | `exit` | Logged out: `login:` |
+
+- Leave the console as you found it. Found in the shell: finish with `exit`
+  from the CLI so it is back at `%`, and do not log the root session out unless
+  the user asks. Found at `login:`: `exit` until `login:` returns.
+- Nothing in the shell is a Junos command (`show: Command not found.`), and Unix
+  commands there (`rm`, `vi`, `reboot`, `newfs`) bypass every Junos safeguard.
+  Run none of them without the user's explicit words.
+- A non-root user who needs the shell uses `start shell user root`, which asks
+  for the root password: ask the user, never guess.
+- csh echoes `exit` twice when a nested shell closes; that is normal.
 
 ## Into configuration mode, and out
 
@@ -64,22 +79,39 @@ prompt tells you the mode; never assume it.
 
 ## Everyday show commands (operational mode)
 
+Junos has no `show system status`; it answers `syntax error, expecting
+<command>.` The health questions are spread over the commands below.
+
 | Question | Command |
 | --- | --- |
 | What is this box, what version | `show version`, `show chassis hardware` |
-| Is it healthy | `show system alarms`, `show chassis alarms`, `show system uptime` |
-| Interfaces up/down at a glance | `show interfaces terse` |
+| Any alarms | `show system alarms`, `show chassis alarms` (good answer: `No alarms currently active`) |
+| CPU, memory, uptime, last reboot reason | `show chassis routing-engine` |
+| Power supplies and temperatures | `show chassis environment` |
+| Is the flash filling up | `show system storage` (watch `/` and `/var`) |
+| Uptime, and when the config last changed | `show system uptime` |
+| Interfaces up/down, one line each | `show interfaces terse` (`\| match ge-` hides the internal ones) |
+| Interfaces, a short block each | `show interfaces brief` (link, speed, duplex, flags; add a name for one port) |
 | Interface descriptions | `show interfaces descriptions` |
-| One interface in detail | `show interfaces ge-0/0/1` (add `extensive` for counters) |
-| VLANs and who is where | `show vlans`, `show ethernet-switching table` |
+| One interface in detail | `show interfaces ge-0/0/1` (add `extensive` for error counters) |
+| Which VLAN each port is in | `show ethernet-switching interfaces`, `show vlans` |
+| MAC table | `show ethernet-switching table` |
 | Neighbours | `show lldp neighbors` |
 | Routing | `show route`, `show route 10.0.0.0/8` |
-| The config, readable and diffable | `show configuration | display set` |
+| The config, readable and diffable | `show configuration \| display set` |
 | One section of config | `show configuration interfaces ge-0/0/1` |
-| Recent log | `show log messages | last 50` |
+| Recent log | `show log messages \| last 50` |
 | Who else is on the box | `show system users` |
 
 From configuration mode, prefix with `run` (`run show interfaces terse`).
+
+Not sure a command exists? Type the words so far and `?` (`show system ?`):
+Junos lists the completions at once, no Enter needed. Send it with
+`line_ending="NONE"`, read the list with `read_available`, then
+`send_keys(["ctrl-u"])` to clear the half-typed line and a bare return to draw
+a clean prompt. Junos redraws an edited line with spaces and backspaces, so a
+prompt pattern ending in `$` does not match until that return; the same holds
+after Tab completion.
 
 ## Paging and long output
 
@@ -102,3 +134,10 @@ command. Otherwise `---(more)---` becomes your prompt; if it appears, pass
 explicit intent in the conversation, and `commit confirmed` is the default for
 anything reachable-affecting. Read-only mode (`SERIAL_CONSOLE_READ_ONLY`)
 allows `show ...` and `cli`/`exit`, and refuses the rest.
+
+## Verified
+
+The shell transitions and every show command above were run on a Juniper
+EX2200-C, Junos 15.1R6.7, through serial-console-mcp on 15 September 2026.
+Entering and leaving configuration mode was checked with nothing committed;
+`commit`, `commit confirmed` and `rollback 1` follow the Junos documentation.

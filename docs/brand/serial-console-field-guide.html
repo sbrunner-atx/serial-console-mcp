@@ -534,8 +534,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <h3>junos-operating</h3>
   <table>
     <tr><th style="width:22%">Prompt ends in</th><th style="width:22%">Mode</th><th>Move</th></tr>
-    <tr><td class="mono">%</td><td>FreeBSD shell</td><td><span class="mono">cli</span> to reach the CLI. <span class="mono">root</span> always lands here; put the console back here if that is how you found it.</td></tr>
-    <tr><td class="mono">&gt;</td><td>Operational</td><td><span class="mono">show …</span>; <span class="mono">configure exclusive</span> to edit; <span class="mono">exit</span> back to the shell (or to <span class="mono">login:</span>).</td></tr>
+    <tr><td class="mono">%<br>(newer releases: ~ # with no [edit] above)</td><td>FreeBSD shell</td><td><span class="mono">cli</span> to reach the CLI; <span class="mono">cli -c "show … | no-more"</span> runs one command without leaving the shell; <span class="mono">exit</span> here logs out. <span class="mono">root</span> always lands here; put the console back here if that is how you found it.</td></tr>
+    <tr><td class="mono">&gt;</td><td>Operational</td><td><span class="mono">show …</span>; <span class="mono">configure exclusive</span> to edit; <span class="mono">exit</span> back to the shell (or to <span class="mono">login:</span>); <span class="mono">start shell</span> opens a shell whose <span class="mono">exit</span> returns here.</td></tr>
     <tr><td class="mono"># with [edit] above</td><td>Configuration</td><td><span class="mono">show | compare</span>, <span class="mono">commit check</span>, <span class="mono">commit confirmed 5</span>, <span class="mono">rollback 0</span> to discard, <span class="mono">exit</span> at the top to leave.</td></tr>
   </table>
   <p>The rules the skill enforces: read the prompt before every action; <span class="mono">configure
@@ -543,12 +543,17 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <span class="mono">show | compare</span> before any commit; <span class="mono">commit confirmed</span>
   for anything that can cut the path you are on, then a plain <span class="mono">commit</span> once
   reachability is verified; <span class="mono">rollback 1</span> then <span class="mono">commit</span>
-  to undo. Everyday questions map to <span class="mono">show version</span>, <span class="mono">show
-  chassis hardware</span>, <span class="mono">show system alarms</span>, <span class="mono">show
-  interfaces terse</span>, <span class="mono">show interfaces descriptions</span>, <span class="mono">show
-  vlans</span>, <span class="mono">show lldp neighbors</span>, <span class="mono">show route</span>,
-  <span class="mono">show configuration | display set</span>, <span class="mono">show log messages |
-  last 50</span>. <span class="mono">set cli screen-length 0</span> once, or <span class="mono">| no-more</span>.</p>
+  to undo.</p>
+  <table>
+    <tr><th style="width:40%">Question</th><th>Junos command</th></tr>
+    <tr><td>What is it, which version</td><td><span class="mono">show version</span>, <span class="mono">show chassis hardware</span></td></tr>
+    <tr><td>Is it healthy (there is no <span class="mono">show system status</span>)</td><td><span class="mono">show system alarms</span>, <span class="mono">show chassis alarms</span>, <span class="mono">show chassis routing-engine</span> (CPU, memory, last reboot), <span class="mono">show chassis environment</span> (power, temperature), <span class="mono">show system storage</span></td></tr>
+    <tr><td>Uptime, last config change</td><td><span class="mono">show system uptime</span></td></tr>
+    <tr><td>Interfaces</td><td><span class="mono">show interfaces terse</span> (one line each), <span class="mono">show interfaces brief</span> (a short block each), <span class="mono">show interfaces descriptions</span></td></tr>
+    <tr><td>VLANs, neighbours, routes</td><td><span class="mono">show ethernet-switching interfaces</span>, <span class="mono">show vlans</span>, <span class="mono">show lldp neighbors</span>, <span class="mono">show route</span></td></tr>
+    <tr><td>Config and log</td><td><span class="mono">show configuration | display set</span>, <span class="mono">show log messages | last 50</span></td></tr>
+  </table>
+  <p><span class="mono">set cli screen-length 0</span> once, or <span class="mono">| no-more</span>. Unsure a command exists? Type <span class="mono">?</span> after the words so far, clear the line with Ctrl-U, and send a bare return for a clean prompt.</p>
 
   <h3>ios-operating</h3>
   <table>
@@ -562,13 +567,19 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   any change that could cut the path, verify, <span class="mono">reload cancel</span>, then
   <span class="mono">write memory</span>. Undo a line with <span class="mono">no</span> in front of it;
   IOS-XE with <span class="mono">archive</span> has <span class="mono">configure replace</span>.
-  Everyday questions map to <span class="mono">show version</span>, <span class="mono">show
-  inventory</span>, <span class="mono">show ip interface brief</span>, <span class="mono">show interfaces
-  status</span>, <span class="mono">show interfaces description</span>, <span class="mono">show vlan
-  brief</span>, <span class="mono">show mac address-table</span>, <span class="mono">show cdp
-  neighbors</span>, <span class="mono">show ip route</span>, <span class="mono">show running-config</span>,
-  <span class="mono">show logging | last 50</span>. <span class="mono">terminal length 0</span> once per
-  session.</p>
+  There is no shell underneath IOS to get out of; the prompts that are not the CLI are the boot
+  monitor and the setup dialog.</p>
+  <table>
+    <tr><th style="width:40%">Question</th><th>IOS command</th></tr>
+    <tr><td>What is it, version, uptime, last reload reason</td><td><span class="mono">show version</span>, <span class="mono">show inventory</span></td></tr>
+    <tr><td>Is it healthy (no <span class="mono">show system status</span> here either)</td><td><span class="mono">show environment all</span>, <span class="mono">show processes cpu sorted</span>, <span class="mono">show processes memory sorted</span></td></tr>
+    <tr><td>Interfaces (<span class="mono">show interfaces brief</span> is NX-OS and IOS-XR, not IOS)</td><td><span class="mono">show ip interface brief</span>, <span class="mono">show interfaces status</span>, <span class="mono">show interfaces description</span></td></tr>
+    <tr><td>VLANs, neighbours, routes</td><td><span class="mono">show vlan brief</span>, <span class="mono">show mac address-table</span>, <span class="mono">show cdp neighbors</span>, <span class="mono">show ip route</span></td></tr>
+    <tr><td>Config and log</td><td><span class="mono">show running-config</span>, <span class="mono">show logging | include %</span></td></tr>
+  </table>
+  <p><span class="mono">terminal length 0</span> once per session. IOS pipes are <span class="mono">include</span>,
+  <span class="mono">exclude</span>, <span class="mono">begin</span>, <span class="mono">section</span> and
+  <span class="mono">count</span>; <span class="mono">last</span> and <span class="mono">no-more</span> are Junos.</p>
   <div class="callout">
     <div class="ct">What both skills refuse to do on their own</div>
     <p>Commit, write, reload, erase, zeroize. Each needs the user's words in the conversation,
@@ -578,11 +589,13 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   </div>
   <div class="callout">
     <div class="ct">Verified on the EX2200</div>
-    <p>The Junos mode transitions in this chapter were run live on 15 September 2026: shell to
-    CLI, into <span class="mono">configure exclusive</span>, <span class="mono">show | compare</span>,
-    <span class="mono">rollback 0</span>, out, the show commands, and back to the shell, with
-    nothing committed. The IOS skill is written from the IOS command reference and has not yet met
-    a Cisco on this bench.</p>
+    <p>The Junos parts of this chapter were run live on 15 September 2026: shell to CLI and
+    back with <span class="mono">cli</span>, <span class="mono">exit</span>, <span class="mono">start shell</span>
+    and <span class="mono">cli -c</span>; into <span class="mono">configure exclusive</span>,
+    <span class="mono">show | compare</span>, <span class="mono">rollback 0</span> and out with nothing
+    committed; and every show command in the Junos table, including the proof that
+    <span class="mono">show system status</span> is a syntax error on Junos. The IOS skill is written
+    from the Cisco command references and has not yet met a Cisco on this bench.</p>
   </div>
 </div>
 
