@@ -20,6 +20,19 @@ until the line goes quiet (`read_available`, `query_text` without one). Leftover
 bytes after a matched prompt stay buffered for the next read. Nothing is lost
 between calls; `get_transcript` re-reads what earlier calls already returned.
 
+## The tools, by job
+
+| Job | Tools |
+| --- | --- |
+| Find and open | `list_serial_ports`, `list_presets`, `connect`, `reconnect_last`, `disconnect`, `status` |
+| Send | `send_text`, `send_hex` |
+| Read | `read_until_prompt`, `read_available`, `query_text`, `clear_buffer` |
+| Script | `expect` (steps + `auto_reply`) |
+| Lines | `set_lines`, `pulse_line`, `send_break` |
+| Record | `capture_start`, `capture_stop`, `get_transcript` (also resource `serial://transcript/{name}`) |
+| Diagnose | `port_in_use_by`, `detect_baud` |
+| Icom CI-V | `civ_build`, `civ_parse`, `civ_freq` |
+
 ## The six rules
 
 1. **Sending never reads.** After `send_text` or `send_hex`, call a read tool.

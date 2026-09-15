@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - unreleased
+## [0.2.0] - 2026-09-15
 
 The "shack" release: several ports at once, control lines, presets, expect
 sequences, capture, and diagnostics. Existing single-port conversations keep
