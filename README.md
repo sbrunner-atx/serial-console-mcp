@@ -69,7 +69,7 @@ interactive CLIs properly.
 | Tool | What it does |
 | --- | --- |
 | `list_serial_ports` | Enumerate ports with description and USB hardware id; marks ones open here |
-| `list_presets` | Usual settings per device family: Cisco/Juniper/Linux consoles, Kenwood/Elecraft/Yaesu CAT, Icom CI-V, rotators, Arduino, NMEA GPS |
+| `list_presets` | Usual settings per device family: Cisco/Juniper/Linux consoles, full-screen consoles (BIOS, BMC, menus), Kenwood/Elecraft/Yaesu CAT, Icom and Xiegu CI-V, rotators, Arduino, NMEA GPS |
 | `connect` / `reconnect_last` / `disconnect` | Open a port by name. Defaults 9600 8N1, no flow control; baud, data bits, parity, stop bits, RTS/CTS, XON/XOFF, line ending and prompt are all settable, or loaded from a preset. Several ports at once |
 | `send_keys` / `screen` | Press Ctrl-C, Esc, Tab, arrows, F-keys by name; view the VT100/xterm screen of a full-screen console (BIOS, BMC, menu switches, vi) |
 | `send_text` / `send_hex` | Write an ASCII line (CR / LF / CRLF / none) or raw hex bytes. Write-only |

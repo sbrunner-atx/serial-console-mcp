@@ -84,7 +84,7 @@
   drive it.</p>
   <table class="glance">
     <tr><th style="width:30%">Tools</th><th style="width:40%">What they do</th><th>When the agent reaches for them</th></tr>
-    <tr><td class="strong mono">list_serial_ports · list_presets</td><td>Every port the computer sees, marked if open here; the usual settings for ten device families.</td><td class="get">First, whenever a port or its settings are unknown</td></tr>
+    <tr><td class="strong mono">list_serial_ports · list_presets</td><td>Every port the computer sees, marked if open here; the usual settings for twelve device families.</td><td class="get">First, whenever a port or its settings are unknown</td></tr>
     <tr><td class="strong mono">connect · reconnect_last · disconnect</td><td>Open a port by name with baud, framing, flow control, line ending and prompt, or from a preset. Several at once. Remembered across sessions.</td><td class="get">&ldquo;Connect the Kenwood as rig and the rotator on the other port&rdquo;</td></tr>
     <tr><td class="strong mono">send_text · send_hex</td><td>Write an ASCII line or raw bytes. Writes only; never reads.</td><td class="get">Any command, login, bare return, CI-V frame</td></tr>
     <tr><td class="strong mono">read_until_prompt · read_available · query_text</td><td>Return buffered output up to a prompt (leaving the rest), or whatever has arrived, or clear-send-read in one.</td><td class="get">Every reply</td></tr>
@@ -282,7 +282,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <h3>Presets: the whole dialog in one word</h3>
   <p><code>connect(preset="kenwood-cat")</code> loads a family's usual settings, including two
   the dialog never asks for: the <b>line ending</b> the device expects and the <b>prompt</b> that
-  ends its replies. Anything you say explicitly overrides the preset. Ten presets ship:
+  ends its replies. Anything you say explicitly overrides the preset. Twelve presets ship:
   <span class="mono">cisco-console</span>, <span class="mono">juniper-craft</span>,
   <span class="mono">linux-console</span>, <span class="mono">kenwood-cat</span>,
   <span class="mono">elecraft-cat</span>, <span class="mono">yaesu-cat</span>,
@@ -812,8 +812,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   call entered the CLI from the shell, disabled paging, ran <span class="mono">show version</span>,
   <span class="mono">show chassis hardware</span> and <span class="mono">show system uptime</span>
   with every prompt matched on the regex, and returned to the shell; an annotated capture
-  recorded it. The worked sessions in chapter E remain representative walk-throughs; the
-  Juniper one now matches what the real switch printed.</p>
+  recorded it. The worked sessions in chapter E remain representative walk-throughs, not
+  recordings of that session.</p>
   <table>
     <tr><th style="width:32%">Resource</th><th>Where</th></tr>
     <tr><td class="strong">serial-console-mcp</td><td class="mono">github.com/sbrunner-atx/serial-console-mcp</td></tr>
