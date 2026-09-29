@@ -127,7 +127,8 @@
       unless you turn them on.</div></div>
   </div>
 
-  <h3>From PyPI <span class="mono">uv or pipx</span></h3>
+  <h3>From PyPI <span class="mono">uv or pipx, for advanced users</span></h3>
+  <p>This is for advanced users. If you use Claude Desktop, the extension above is all you need.</p>
   <pre>uvx serial-console-mcp configure --command uvx --arg serial-console-mcp
 <span class="k"># or</span>
 pipx install serial-console-mcp
@@ -137,6 +138,11 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <code>serial-console-mcp configure --remove</code> undoes it. Any MCP client can launch the same
   command over stdio. Developers: <code>git clone</code>, <code>uv sync</code>,
   <code>uv run pytest</code>.</p>
+  <div class="callout" style="break-inside:avoid;page-break-inside:avoid">
+    <div class="ct">Untested outside Claude</div>
+    <p>MCP is an open standard, so other assistants and agentic harnesses such as OpenClaw should
+    work too. They have not been tested, and there are no ready-made configurations for them yet.</p>
+  </div>
 
   <h3>Verify <span class="mono">thirty seconds</span></h3>
   <div class="numlist">
