@@ -91,7 +91,7 @@ used one. Each connection has a terminal mode: `dumb` (raw bytes, the default),
 prompts matched on the line as displayed even after a device redraws it with
 spaces and backspaces; used by the console presets), or `xterm`/`vt100` (a real screen you can read
 with `screen`; needs `pip install 'serial-console-mcp[screen]'`, included in
-the installers). The receive buffer is capped at 4 MB per port; if a device streams for
+the desktop extension). The receive buffer is capped at 4 MB per port; if a device streams for
 hours unread, the oldest bytes are dropped and `status` says how many.
 
 ### Operating skills
@@ -118,25 +118,32 @@ Set them in the server's entry in `claude_desktop_config.json` under `"env"`.
 
 ## Installing
 
-1. Download the installer for your computer from the
-   [Releases page](https://github.com/sbrunner-atx/serial-console-mcp/releases)
-   (the `.exe` on Windows, or the `.pkg` on a Mac) and click through it like any
-   normal program. It sets everything up for you. The installers are unsigned for
-   now, so expect a Gatekeeper / SmartScreen warning.
-2. **Completely quit Claude Desktop** — not just closing the window. On Windows,
-   right-click the Claude icon near the clock and choose Quit. On a Mac, press
-   ⌘Q or choose **Claude → Quit**.
-3. Open Claude Desktop again.
-4. In a new chat, type: **"What serial ports do you see?"** If Claude lists your
+1. Download `serial-console-mcp.mcpb` from the
+   [Releases page](https://github.com/sbrunner-atx/serial-console-mcp/releases).
+   The same file works on Mac, Windows and Linux.
+2. In Claude Desktop, go to **Settings → Extensions → Advanced settings →
+   Install Extension…** and choose the file. A short settings form offers
+   read-only mode and an idle timeout; both are off unless you turn them on.
+3. In a new chat, type: **"What serial ports do you see?"** If Claude lists your
    ports, you're done.
 
-That's the whole thing. There's no separate program to keep open and nothing to
-configure by hand.
+No terminal, no Python, nothing to configure by hand.
+
+**Upgrading from the 0.3.x `.pkg` or `.exe` installer?** Remove the old copy
+first, or Claude Desktop starts two servers. On a Mac:
+
+```bash
+"/Library/Application Support/SerialConsoleMCP/serial-console-mcp" configure --remove
+sudo rm -rf "/Library/Application Support/SerialConsoleMCP"
+```
+
+On Windows, uninstall **Serial Console MCP** under Settings → Apps. Then quit
+and reopen Claude Desktop.
 
 ## Installing from PyPI
 
 If you already have Python 3.10+ and [uv](https://docs.astral.sh/uv/) or pipx,
-you don't need the installer:
+you can skip the extension:
 
 ```bash
 uvx serial-console-mcp --version                                   # fetches and runs it
@@ -166,8 +173,9 @@ uv run serial-console-mcp configure --command "$PWD/.venv/bin/serial-console-mcp
 ```
 
 The package lives in `src/serial_console_mcp/`: `server.py` is the MCP server,
-`configure.py` the Claude Desktop registrar. See [BUILD.md](BUILD.md) for the
-installers.
+`configure.py` the Claude Desktop registrar. `manifest.json` describes the
+desktop extension; `npx @anthropic-ai/mcpb pack` builds it. [BUILD.md](BUILD.md)
+covers the retired `.pkg` and `.exe` installers.
 
 ## Using it
 

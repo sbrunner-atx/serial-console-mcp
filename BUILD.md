@@ -1,14 +1,17 @@
-# BUILD — making the two installers
+# BUILD — the retired `.pkg` and `.exe` installers
 
-Goal: a single file the user double-clicks. No Python, no terminal, no JSON.
-Everything here is wired up; you mostly just run it.
+**Status (September 2026):** releases now ship `serial-console-mcp.mcpb`, a Claude
+Desktop extension built from `manifest.json` with `npx @anthropic-ai/mcpb pack`.
+The installers below are no longer attached to releases. This file stays as a
+record of how they were built.
 
-## Why not a `.mcpb`?
+## Why there were installers
 
-A `.mcpb` extension runs in Claude Desktop's sandbox — no LAN, no `/dev/cu.*`, no
-COM ports. So it can't drive serial. The install therefore registers a **host
-stdio subprocess** (the route that works for reaching real hardware), but hides
-every manual step inside a clicker.
+The installers were written on the assumption that a `.mcpb` extension runs in
+Claude Desktop's sandbox with no access to `/dev/cu.*` or COM ports. That turned
+out not to hold for serial ports: on 28 September 2026 the 0.3.2 extension listed
+the ports on a Mac and opened `/dev/cu.Bluetooth-Incoming-Port` without error.
+Windows COM ports through the extension have not been tested yet.
 
 ## One binary, two jobs
 
