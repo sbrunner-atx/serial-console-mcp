@@ -1,0 +1,199 @@
+{
+  "manifest_version": "0.4",
+  "name": "serial-console-mcp",
+  "display_name": "Serial Console (telecom, radio, any serial port)",
+  "version": "0.3.2",
+  "description": "Let Claude configure telecommunication equipment and any other device over its serial console.",
+  "long_description": "An MCP server for serial ports. Drives Juniper Junos and Cisco IOS / IOS-XE console and craft ports, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, GS-232 antenna rotators, and anything else on a serial cable, in raw, ANSI or VT100 mode. A background reader drains the port the whole time it is open, so reads end at the device's prompt instead of a guessed delay. Includes device presets, control lines (DTR/RTS/BREAK), expect sequences, session capture, baud detection, and operating skills for Junos and IOS.",
+  "author": {
+    "name": "Stefan Brunner (AE5VG)",
+    "email": "me@stefanbrunner.org",
+    "url": "https://github.com/sbrunner-atx"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sbrunner-atx/serial-console-mcp.git"
+  },
+  "homepage": "https://github.com/sbrunner-atx/serial-console-mcp",
+  "documentation": "https://github.com/sbrunner-atx/serial-console-mcp#readme",
+  "support": "https://github.com/sbrunner-atx/serial-console-mcp/issues",
+  "license": "MIT",
+  "keywords": [
+    "serial",
+    "console",
+    "juniper",
+    "cisco",
+    "ham radio",
+    "cat",
+    "ci-v",
+    "rotator",
+    "mcp"
+  ],
+  "server": {
+    "type": "uv",
+    "entry_point": "src/serial_console_mcp/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "--extra",
+        "screen",
+        "serial-console-mcp"
+      ],
+      "env": {
+        "SERIAL_CONSOLE_READ_ONLY": "${user_config.read_only}",
+        "SERIAL_CONSOLE_IDLE_MINUTES": "${user_config.idle_minutes}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "list_serial_ports",
+      "description": "List every serial port the computer can currently see."
+    },
+    {
+      "name": "list_presets",
+      "description": "Show the device presets `connect(preset=...)` understands, with their settings."
+    },
+    {
+      "name": "connect",
+      "description": "Open a serial port and start its background reader."
+    },
+    {
+      "name": "reconnect_last",
+      "description": "Reconnect to a remembered port with the same settings as last time."
+    },
+    {
+      "name": "disconnect",
+      "description": "Close a serial port and free it for other programs."
+    },
+    {
+      "name": "status",
+      "description": "Report every open port: settings, reader state, buffered bytes, control-line states, capture, and which connection is current."
+    },
+    {
+      "name": "send_text",
+      "description": "Send an ASCII command to the device."
+    },
+    {
+      "name": "send_hex",
+      "description": "Send raw bytes given as hex."
+    },
+    {
+      "name": "read_until_prompt",
+      "description": "Read accumulated output until a prompt appears, or until timeout."
+    },
+    {
+      "name": "read_available",
+      "description": "Drain and return whatever the device has sent, without transmitting anything."
+    },
+    {
+      "name": "query_text",
+      "description": "Convenience: clear the buffer, send an ASCII command, and read the reply."
+    },
+    {
+      "name": "expect",
+      "description": "Run a scripted sequence of send-and-wait steps in one call, like `expect`."
+    },
+    {
+      "name": "clear_buffer",
+      "description": "Discard any buffered received data."
+    },
+    {
+      "name": "send_keys",
+      "description": "Press keys by name, encoded the way a VT100/xterm terminal sends them."
+    },
+    {
+      "name": "screen",
+      "description": "Show the current terminal screen of a vt100/xterm connection: what a person at a real terminal would see right now, as rows of text, plus the cursor position."
+    },
+    {
+      "name": "set_lines",
+      "description": "Set the DTR and/or RTS output lines and hold them."
+    },
+    {
+      "name": "pulse_line",
+      "description": "Drive DTR or RTS to `level` for `ms` milliseconds, then restore it."
+    },
+    {
+      "name": "send_break",
+      "description": "Send a BREAK condition (TX held low) for `ms` milliseconds."
+    },
+    {
+      "name": "capture_start",
+      "description": "Start writing this connection's traffic to a file until capture_stop."
+    },
+    {
+      "name": "capture_stop",
+      "description": "Stop the capture started by capture_start and report the file and size."
+    },
+    {
+      "name": "get_transcript",
+      "description": "Return the tail of everything received on a connection since it was opened."
+    },
+    {
+      "name": "port_in_use_by",
+      "description": "Report which program currently holds a serial port (macOS/Linux, via lsof)."
+    },
+    {
+      "name": "detect_baud",
+      "description": "Try common baud rates on a closed port and rank them by how readable the reply is."
+    },
+    {
+      "name": "civ_build",
+      "description": "Build an Icom CI-V frame as hex, ready for send_hex."
+    },
+    {
+      "name": "civ_parse",
+      "description": "Decode Icom CI-V frames from hex (as returned by read_available)."
+    },
+    {
+      "name": "civ_freq",
+      "description": "Convert between a frequency in MHz and CI-V BCD data bytes."
+    },
+    {
+      "name": "cat_build",
+      "description": "Build a ';'-terminated text CAT command (Kenwood, Elecraft, Yaesu) for query_text or send_text with line_ending=\"NONE\"."
+    },
+    {
+      "name": "cat_parse",
+      "description": "Decode ';'-terminated text CAT replies: rig id to model, FA/FB to MHz, MD to mode name, IF to frequency/mode/VFO/split/TX state, and the ?; E; O; error answers."
+    },
+    {
+      "name": "rotator_build",
+      "description": "Build a Yaesu GS-232A/B rotator command for send_text (CR) or query_text."
+    },
+    {
+      "name": "rotator_parse",
+      "description": "Decode a GS-232 reply into azimuth/elevation degrees (\"+0180\", \"+0180+0045\", \"AZ=180 EL=045\") or the ?> rejection."
+    }
+  ],
+  "tools_generated": false,
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.10"
+    }
+  },
+  "user_config": {
+    "read_only": {
+      "type": "boolean",
+      "title": "Read-only mode",
+      "description": "Refuse anything but read-style commands (show/display/get, two-letter CAT reads, CI-V read frames) and refuse DTR/RTS changes.",
+      "default": false
+    },
+    "idle_minutes": {
+      "type": "number",
+      "title": "Close an idle port after (minutes)",
+      "description": "Free a port nobody has used for this long, so a forgotten connection stops blocking other programs. 0 disables it.",
+      "default": 0
+    }
+  }
+}
