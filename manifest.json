@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "serial-console-mcp",
   "display_name": "Serial Console (telecom, radio, any serial port)",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Let Claude configure telecommunication equipment and any other device over its serial console.",
   "long_description": "An MCP server for serial ports. Drives Juniper Junos and Cisco IOS / IOS-XE console and craft ports, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, GS-232 antenna rotators, and anything else on a serial cable, in raw, ANSI or VT100 mode. A background reader drains the port the whole time it is open, so reads end at the device's prompt instead of a guessed delay. Includes device presets, control lines (DTR/RTS/BREAK), expect sequences, session capture, baud detection, and operating skills for Junos and IOS.",
   "author": {

@@ -1,6 +1,6 @@
 [project]
 name = "serial-console-mcp"
-version = "0.3.2"
+version = "0.3.3"
 description = "AI for the configuration of telecommunication equipment over its serial console: Juniper and Cisco routers and switches, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, and GS-232 antenna rotators, plus any other serial device in raw, ANSI or VT100 mode: IoT gateways, alarm and control panels, instruments. An MCP server for Claude and other AI assistants."
 readme = "README.md"
 license = { text = "MIT" }
@@ -37,6 +37,11 @@ keywords = [
     "ansi",
     "alarm-panel",
     "embedded",
+    "claude",
+    "ai-assistant",
+    "ai-agent",
+    "llm",
+    "ae5vg",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -49,6 +54,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Communications :: Ham Radio",
     "Topic :: Home Automation",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: System :: Hardware",
     "Topic :: System :: Networking",
     "Topic :: Terminals :: Serial",
@@ -80,9 +86,11 @@ dev = [
 serial-console-mcp = "serial_console_mcp.server:main"
 
 [project.urls]
-Homepage = "https://github.com/sbrunner-atx/serial-console-mcp"
+Homepage = "https://ae5vg.com/products/serial-console-mcp.html"
+Documentation = "https://github.com/sbrunner-atx/serial-console-mcp#readme"
 Repository = "https://github.com/sbrunner-atx/serial-console-mcp"
 Issues = "https://github.com/sbrunner-atx/serial-console-mcp/issues"
+Changelog = "https://github.com/sbrunner-atx/serial-console-mcp/blob/main/CHANGELOG.md"
 "Field Guide" = "https://github.com/sbrunner-atx/serial-console-mcp/blob/main/docs/serial-console-mcp%20Field%20Guide.pdf"
 
 [build-system]

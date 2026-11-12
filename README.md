@@ -2,6 +2,8 @@
 
 <!-- mcp-name: io.github.sbrunner-atx/serial-console-mcp -->
 
+Project page: [ae5vg.com/products/serial-console-mcp](https://ae5vg.com/products/serial-console-mcp.html)
+
 **AI for the configuration of telecommunication equipment, through the console port it already has.**
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
@@ -174,7 +176,7 @@ uv run serial-console-mcp configure --command "$PWD/.venv/bin/serial-console-mcp
 
 The package lives in `src/serial_console_mcp/`: `server.py` is the MCP server,
 `configure.py` the Claude Desktop registrar. `manifest.json` describes the
-desktop extension; `npx @anthropic-ai/mcpb pack` builds it. [BUILD.md](BUILD.md)
+desktop extension; `npx @anthropic-ai/mcpb pack` builds it. [BUILD.md](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/BUILD.md)
 covers the retired `.pkg` and `.exe` installers.
 
 ## Using it
@@ -237,6 +239,6 @@ real terminal handy for anything you would not want an assistant to type.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/LICENSE).
 
 73!

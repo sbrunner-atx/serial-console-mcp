@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-12
+
+Package page only; no code or behavior changes.
+
+### Changed
+- The PyPI page links to the project page on ae5vg.com, the changelog and the issue tracker..
+- Links in the README point to GitHub, so they also work on PyPI.
+- More keywords and classifiers, so the package turns up in PyPI searches for AI assistants and ham radio.
+- The release workflow also publishes `server.json` to the official MCP Registry once the PyPI upload is live, so the registry entry no longer falls behind PyPI.
+
 ## [0.3.2] - 2026-09-15
 
 Says what else the server is for: any device on a serial port, not only
