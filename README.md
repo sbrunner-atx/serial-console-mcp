@@ -142,6 +142,19 @@ sudo rm -rf "/Library/Application Support/SerialConsoleMCP"
 On Windows, uninstall **Serial Console MCP** under Settings → Apps. Then quit
 and reopen Claude Desktop.
 
+## Installing as a plugin, with the operating skills
+
+The **Serial Console** plugin installs serial-console-mcp and its operating skills in one step. There is a version for Claude and a version for ChatGPT, Codex and other apps that support the open Agent Plugins standard, such as Cursor, GitHub Copilot and VS Code. The plugin needs [uv](https://docs.astral.sh/uv/).
+
+In Claude Code:
+
+```
+/plugin marketplace add sbrunner-atx/ae5vg-plugins
+/plugin install serial-console-mcp@ae5vg
+```
+
+For the other apps, see [ae5vg.com/downloads.html#plugins](https://ae5vg.com/downloads.html#plugins).
+
 ## Installing from PyPI
 
 If you already have Python 3.10+ and [uv](https://docs.astral.sh/uv/) or pipx,
