@@ -1,0 +1,23 @@
+# Keep the desktop extension to what it needs to run: the package, uv.lock, the
+# manifest, the skills and the docs. Local environments and build output never go in.
+.venv/
+.git/
+.github/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+_hosttest/
+tests/
+packaging/
+scripts/
+*.mcpb
+*.pkg
+*.exe
+*.spec
+installer.iss
+build_macos.sh
+uninstall_macos.sh
+.DS_Store
