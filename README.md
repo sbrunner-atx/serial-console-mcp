@@ -145,7 +145,7 @@ and reopen Claude Desktop.
 
 ## Add the operating skills
 
-The desktop extension installs only the server. Its operating skills are separate downloads: `serial-console.skill`, `junos-operating.skill` and `ios-operating.skill`, from the [latest release](https://github.com/sbrunner-atx/serial-console-mcp/releases/latest) or [ae5vg.com/downloads.html](https://ae5vg.com/downloads.html#serial-console-mcp). In Claude, open **Customize → Skills**, click **Add**, then **Upload skill**, and choose each file.
+The desktop extension installs only the server. Its operating skills are separate downloads: `serial-console.skill`, `junos-operating.skill` and `ios-operating.skill`, from the [latest release](https://github.com/sbrunner-atx/serial-console-mcp/releases/latest) or [ae5vg.com/downloads.html](https://ae5vg.com/downloads.html#serial-console-mcp). In Claude, open **Customize → Skills**, click **Add**, then **Upload skill**, and choose all the files at once.
 
 For Claude Code or another MCP client, copy the folders under `skills/` into the client's skills folder, for Claude Code `~/.claude/skills/`.
 
