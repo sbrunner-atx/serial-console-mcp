@@ -93,7 +93,7 @@ used one. Each connection has a terminal mode: `dumb` (raw bytes, the default),
 prompts matched on the line as displayed even after a device redraws it with
 spaces and backspaces; used by the console presets), or `xterm`/`vt100` (a real screen you can read
 with `screen`; needs `pip install 'serial-console-mcp[screen]'`, included in
-the desktop extension). The receive buffer is capped at 4 MB per port; if a device streams for
+the desktop connector). The receive buffer is capped at 4 MB per port; if a device streams for
 hours unread, the oldest bytes are dropped and `status` says how many.
 
 ### Operating skills
@@ -124,8 +124,10 @@ Set them in the server's entry in `claude_desktop_config.json` under `"env"`.
 1. Download `serial-console-mcp.mcpb` from the
    [Releases page](https://github.com/sbrunner-atx/serial-console-mcp/releases).
    The same file works on Mac, Windows and Linux.
-2. In Claude Desktop, go to **Settings → Extensions → Advanced settings →
-   Install Extension…** and choose the file. A short settings form offers
+2. In Claude Desktop, open **Settings → Desktop app**, click **Manage** next to
+   **Extensions**, and drag the file onto that page (or use **Advanced settings →
+   Install extension**). It then shows as a connector under **Settings →
+   Customize → Connectors**. A short settings form offers
    read-only mode and an idle timeout; both are off unless you turn them on.
 3. In a new chat, type: **"What serial ports do you see?"** If Claude lists your
    ports, you're done.
@@ -145,14 +147,14 @@ and reopen Claude Desktop.
 
 ## Add the operating skills
 
-The desktop extension installs only the server. Its operating skills are separate downloads: `serial-console.skill`, `junos-operating.skill` and `ios-operating.skill`, from the [latest release](https://github.com/sbrunner-atx/serial-console-mcp/releases/latest) or [ae5vg.com/downloads.html](https://ae5vg.com/downloads.html#serial-console-mcp). In Claude, open **Customize → Skills**, click **Add**, then **Upload skill**, and choose all the files at once.
+The desktop connector installs only the server. Its operating skills are separate downloads: `serial-console.skill`, `junos-operating.skill` and `ios-operating.skill`, from the [latest release](https://github.com/sbrunner-atx/serial-console-mcp/releases/latest) or [ae5vg.com/downloads.html](https://ae5vg.com/downloads.html#serial-console-mcp). In Claude, open **Customize → Skills**, click **Add**, then **Upload skill**, and choose all the files at once.
 
 For Claude Code or another MCP client, copy the folders under `skills/` into the client's skills folder, for Claude Code `~/.claude/skills/`.
 
 ## Installing from PyPI
 
 If you already have Python 3.10+ and [uv](https://docs.astral.sh/uv/) or pipx,
-you can skip the extension:
+you can skip the desktop connector:
 
 ```bash
 uvx serial-console-mcp --version                                   # fetches and runs it

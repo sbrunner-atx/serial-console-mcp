@@ -114,19 +114,18 @@
   <p class="lead">The server runs on your own computer, started by Claude Desktop, so it can see
   <code>/dev/cu.*</code>, <code>COM4</code> or <code>/dev/ttyUSB0</code>.</p>
 
-  <h3>As a desktop extension <span class="mono">recommended</span></h3>
+  <h3>As a desktop connector <span class="mono">recommended</span></h3>
   <div class="numlist">
     <div class="item"><div class="no">1</div><div class="bd"><b>Download the bundle.</b>
       Get <code>serial-console-mcp.mcpb</code> from the GitHub Releases page. The same file
       works on Mac, Windows and Linux.</div></div>
     <div class="item"><div class="no">2</div><div class="bd"><b>Install it.</b>
-      In Claude Desktop, go to Settings → Extensions → Advanced settings → Install Extension
-      and choose the file. No terminal and no Python to install.</div></div>
+      In Claude, open Settings → Desktop app, click Manage next to Extensions, and drag <code>serial-console-mcp.mcpb</code> onto that page. If dragging does not work, click Advanced settings, then Install extension, and choose the file. The new connector then shows under Settings → Customize → Connectors. No terminal and no Python to install.</div></div>
     <div class="item"><div class="no">3</div><div class="bd"><b>Settings, if you want them.</b>
       The form offers read-only mode and a timeout that closes a forgotten port. Both are off
       unless you turn them on.</div></div>
     <div class="item"><div class="no">4</div><div class="bd"><b>Download the skills.</b>
-      The extension does not install them. On the Downloads page at ae5vg.com, under
+      The connector does not install them. On the Downloads page at ae5vg.com, under
       serial-console-mcp, click <code>serial-console.skill</code>, <code>junos-operating.skill</code>
       and <code>ios-operating.skill</code>.</div></div>
     <div class="item"><div class="no">5</div><div class="bd"><b>Add the skills.</b>
@@ -137,7 +136,7 @@
   </div>
 
   <h3>From PyPI <span class="mono">uv or pipx, for advanced users</span></h3>
-  <p>This is for advanced users. If you use Claude Desktop, the extension and skills above are all you need.</p>
+  <p>This is for advanced users. If you use Claude Desktop, the connector and skills above are all you need.</p>
   <pre>uvx serial-console-mcp configure --command uvx --arg serial-console-mcp
 <span class="k"># or</span>
 pipx install serial-console-mcp
@@ -505,7 +504,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <p>Choose the mode on <span class="mono">connect(terminal=…)</span> or let the preset. The raw
   bytes are always kept in the capture file and in the screen model; only what the read tools
   return is cleaned. The screen model needs the <span class="mono">[screen]</span> extra
-  (<span class="mono">pip install 'serial-console-mcp[screen]'</span>); the desktop extension
+  (<span class="mono">pip install 'serial-console-mcp[screen]'</span>); the desktop connector
   includes it. Without it, <span class="mono">xterm</span> quietly runs as <span class="mono">ansi</span>
   and says so.</p>
 
@@ -832,7 +831,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <table>
     <tr><th style="width:32%">Resource</th><th>Where</th></tr>
     <tr><td class="strong">serial-console-mcp</td><td class="mono">github.com/sbrunner-atx/serial-console-mcp</td></tr>
-    <tr><td class="strong">Desktop extension</td><td class="mono">GitHub Releases · serial-console-mcp.mcpb</td></tr>
+    <tr><td class="strong">Desktop connector</td><td class="mono">GitHub Releases · serial-console-mcp.mcpb</td></tr>
     <tr><td class="strong">PyPI</td><td class="mono">pypi.org/project/serial-console-mcp · uvx serial-console-mcp</td></tr>
     <tr><td class="strong">Server and tests</td><td class="mono">src/serial_console_mcp/ (server, presets, terminal, cat, civ, rotator) · tests/test_serial_console.py</td></tr>
     <tr><td class="strong">Operating skills</td><td class="mono">skills/serial-console · skills/junos-operating · skills/ios-operating (SKILL.md each)</td></tr>
