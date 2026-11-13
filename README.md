@@ -151,6 +151,8 @@ The desktop connector installs only the server. Its operating skills are separat
 
 For Claude Code or another MCP client, copy the folders under `skills/` into the client's skills folder, for Claude Code `~/.claude/skills/`.
 
+To run the server itself in Claude Code, Codex, Cursor or VS Code, see [Other AI assistants](https://ae5vg.com/getting-started.html#other-clients) for the command or configuration block to copy.
+
 ## Installing from PyPI
 
 If you already have Python 3.10+ and [uv](https://docs.astral.sh/uv/) or pipx,
