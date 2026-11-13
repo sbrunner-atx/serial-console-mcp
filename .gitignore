@@ -21,3 +21,6 @@ pkgroot/
 
 # Desktop extension build output
 *.mcpb
+
+# Skill files built for the GitHub Release
+*.skill

@@ -125,10 +125,18 @@
     <div class="item"><div class="no">3</div><div class="bd"><b>Settings, if you want them.</b>
       The form offers read-only mode and a timeout that closes a forgotten port. Both are off
       unless you turn them on.</div></div>
+    <div class="item"><div class="no">4</div><div class="bd"><b>Download the skills.</b>
+      The extension does not install them. On the Downloads page at ae5vg.com, under
+      serial-console-mcp, click <code>serial-console.skill</code>, <code>junos-operating.skill</code>
+      and <code>ios-operating.skill</code>.</div></div>
+    <div class="item"><div class="no">5</div><div class="bd"><b>Add the skills.</b>
+      In Claude, open Customize → Skills. Click Add, then Upload skill, and
+      choose <code>serial-console.skill</code>. Do the same with <code>junos-operating.skill</code>
+      and <code>ios-operating.skill</code>.</div></div>
   </div>
 
   <h3>From PyPI <span class="mono">uv or pipx, for advanced users</span></h3>
-  <p>This is for advanced users. If you use Claude Desktop, the extension above is all you need.</p>
+  <p>This is for advanced users. If you use Claude Desktop, the extension and skills above are all you need.</p>
   <pre>uvx serial-console-mcp configure --command uvx --arg serial-console-mcp
 <span class="k"># or</span>
 pipx install serial-console-mcp
@@ -136,12 +144,13 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <p>Needs Python 3.10 or newer. <code>configure</code> writes the Claude Desktop entry, merging
   with servers already there and backing up the old file;
   <code>serial-console-mcp configure --remove</code> undoes it. Any MCP client can launch the same
-  command over stdio. Developers: <code>git clone</code>, <code>uv sync</code>,
+  command over stdio. Copy the skill directories from <code>skills/</code> into the client's
+  skills folder, for Claude Code <code>~/.claude/skills/</code>. Developers: <code>git clone</code>, <code>uv sync</code>,
   <code>uv run pytest</code>.</p>
   <div class="callout" style="break-inside:avoid;page-break-inside:avoid">
     <div class="ct">Untested outside Claude</div>
     <p>MCP is an open standard, so other assistants and agentic harnesses such as OpenClaw should
-    work too. They have not been tested, and there are no ready-made configurations for them yet.</p>
+    work too. They have not been tested yet.</p>
   </div>
 
   <h3>Verify <span class="mono">thirty seconds</span></h3>
@@ -558,8 +567,9 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <p class="lead">The server knows about bytes and prompts. Two skills teach the agent what the
   prompts mean on the two console families it will meet most: how to tell which mode it is in,
   how to get out of one and into another, how to change something without cutting the branch it
-  sits on, and which show commands answer the everyday questions. Both live in
-  <span class="mono">skills/</span> and load the way the fldigi skills do.</p>
+  sits on, and which show commands answer the everyday questions. Both are
+  downloads of their own, <code>junos-operating.skill</code> and <code>ios-operating.skill</code>,
+  and you add them in Claude under Customize → Skills, as in Chapter B.</p>
 
   <h3>junos-operating</h3>
   <table>

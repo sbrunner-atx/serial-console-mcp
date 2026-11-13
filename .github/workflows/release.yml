@@ -69,10 +69,14 @@ jobs:
           for v in $registry; do test "$tag" = "$v" || exit 1; done
       - name: Build the desktop extension
         run: npx --yes @anthropic-ai/mcpb pack
+      - name: Zip each operating skill
+        # A .mcpb does not install its skills, so each skill is also a download of its own.
+        # A .skill file is a zip holding the skill folder (Customize, Skills, Add, Upload skill). Safari does not unpack .skill.
+        run: (cd skills && for s in */; do s="${s%/}"; zip -qr "../$s.skill" "$s" -x '*.DS_Store'; done)
       - name: Attach to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" ./*.mcpb --clobber
+        run: gh release upload "$GITHUB_REF_NAME" ./*.mcpb ./*.skill --clobber
 
   # Publishes server.json to the official MCP Registry once the PyPI upload is
   # live. The registry checks that this version exists on PyPI and that the

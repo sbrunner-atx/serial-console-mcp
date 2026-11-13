@@ -21,3 +21,6 @@ installer.iss
 build_macos.sh
 uninstall_macos.sh
 .DS_Store
+
+# Skill files built for the GitHub Release
+*.skill

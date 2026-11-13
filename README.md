@@ -98,9 +98,10 @@ hours unread, the oldest bytes are dropped and `status` says how many.
 
 ### Operating skills
 
-Three skill files in `skills/` teach an agent the discipline, the way the
-fldigi-mcp skills do; copy them into `~/.claude/skills/` or a project's
-`.claude/skills/`:
+Three skill files in `skills/` teach an agent the discipline. In the Claude
+desktop app, upload them as described under
+[Add the operating skills](#add-the-operating-skills); in Claude Code, copy them into
+`~/.claude/skills/` or a project's `.claude/skills/`:
 
 | Skill | What it teaches |
 | --- | --- |
@@ -142,18 +143,11 @@ sudo rm -rf "/Library/Application Support/SerialConsoleMCP"
 On Windows, uninstall **Serial Console MCP** under Settings → Apps. Then quit
 and reopen Claude Desktop.
 
-## Installing as a plugin, with the operating skills
+## Add the operating skills
 
-The **Serial Console** plugin installs serial-console-mcp and its operating skills in one step. There is a version for Claude and a version for ChatGPT, Codex and other apps that support the open Agent Plugins standard, such as Cursor, GitHub Copilot and VS Code. The plugin needs [uv](https://docs.astral.sh/uv/).
+The desktop extension installs only the server. Its operating skills are separate downloads: `serial-console.skill`, `junos-operating.skill` and `ios-operating.skill`, from the [latest release](https://github.com/sbrunner-atx/serial-console-mcp/releases/latest) or [ae5vg.com/downloads.html](https://ae5vg.com/downloads.html#serial-console-mcp). In Claude, open **Customize → Skills**, click **Add**, then **Upload skill**, and choose each file.
 
-In Claude Code:
-
-```
-/plugin marketplace add sbrunner-atx/ae5vg-plugins
-/plugin install serial-console-mcp@ae5vg
-```
-
-For the other apps, see [ae5vg.com/downloads.html#plugins](https://ae5vg.com/downloads.html#plugins).
+For Claude Code or another MCP client, copy the folders under `skills/` into the client's skills folder, for Claude Code `~/.claude/skills/`.
 
 ## Installing from PyPI
 
