@@ -20,6 +20,12 @@ claude_desktop_config.json (console script `serial-console-mcp`, or the frozen
 installer binary). It does NOT run inside Claude's sandbox, which is exactly why
 it can see /dev/cu.* (macOS), COMx (Windows), or /dev/ttyUSB* (Linux).
 
+A console can also be reached over the network, the same way: telnet (console
+servers' reverse-telnet ports, ser2net), RFC 2217 (telnet with remote baud,
+DTR/RTS and BREAK), raw TCP, or SSH (a shell, or a console server's per-port
+SSH). See transports.py and ssh_transport.py; every transport looks like a
+serial port to the reader below, so all tools work over all of them.
+
 Interactive-console model
 -------------------------
 A serial console is not request/response. It echoes what you type, emits
@@ -42,14 +48,20 @@ Environment
   SERIAL_CONSOLE_READ_ONLY=1      refuse writes except read-style commands
   SERIAL_CONSOLE_ALLOW=<regex>    override the read-only allowlist
   SERIAL_CONSOLE_IDLE_MINUTES=15  auto-close a port idle that long (0 = never)
+  SERIAL_CONSOLE_NETWORK_HOSTS=.. hosts network transports may reach (globs or
+                                  CIDRs, comma-separated; empty = any, "none" = off)
+  SERIAL_CONSOLE_CREDENTIALS=..   path of the named-credentials file
 """
 
 from __future__ import annotations
 
+import fnmatch
+import ipaddress
 import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -58,6 +70,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field
 
@@ -72,7 +85,7 @@ except ImportError:
 
 from mcp.server.fastmcp import FastMCP
 
-from . import cat, civ, configure, rotator, terminal
+from . import cat, civ, configure, credentials, rotator, terminal, transports
 from . import terminal as terminal_module
 from .presets import PRESETS
 from .presets import describe as describe_presets
@@ -104,7 +117,9 @@ _STOPBITS = {1: serial.STOPBITS_ONE, 1.5: serial.STOPBITS_ONE_POINT_FIVE,
              2: serial.STOPBITS_TWO}
 _SETTINGS_KEYS = ("port", "name", "preset", "baud", "bytesize", "parity", "stopbits",
                   "rtscts", "xonxoff", "line_ending", "prompt", "prompt_regex",
-                  "terminal", "cols", "rows")
+                  "terminal", "cols", "rows",
+                  # network targets; `credential` is only the NAME of a stored secret
+                  "transport", "host", "tcp_port", "username", "credential")
 _BAUD_CANDIDATES = [9600, 115200, 19200, 38400, 57600, 4800, 2400, 1200, 230400]
 
 LineEnding = Literal["CR", "CRLF", "LF", "NONE"]
@@ -112,6 +127,11 @@ Parity = Literal["N", "E", "O"]
 CaptureFormat = Literal["raw", "annotated"]
 Terminal = Literal["dumb", "ansi", "vt100", "xterm"]
 ControlLine = Literal["DTR", "RTS"]
+TransportName = Literal["serial", "telnet", "ssh", "tcp", "rfc2217"]
+_NETWORK = ("telnet", "ssh", "tcp", "rfc2217")
+_SCHEMES = {"telnet": "telnet", "ssh": "ssh", "tcp": "tcp", "raw": "tcp", "socket": "tcp",
+            "rfc2217": "rfc2217"}
+_DEFAULT_TCP_PORT = {"telnet": 23, "ssh": None}
 
 
 def _env_flag(name: str) -> bool:
@@ -131,6 +151,9 @@ try:
     IDLE_MINUTES = float(os.environ.get("SERIAL_CONSOLE_IDLE_MINUTES", "0") or 0)
 except ValueError:
     IDLE_MINUTES = 0.0
+# Which hosts network transports may reach: globs ("*.bench.lan", "opengear-1")
+# and CIDRs ("10.20.0.0/16"), comma- or space-separated. Empty = any; "none" = off.
+NETWORK_HOSTS = os.environ.get("SERIAL_CONSOLE_NETWORK_HOSTS", "").strip()
 
 
 # ----------------------------------------------------------------------------
@@ -142,8 +165,9 @@ class Connection:
     """One open port: its settings, its reader thread, and its buffers."""
 
     name: str
-    port: object  # serial.Serial
+    port: object  # serial.Serial, or a network transport that behaves like one
     settings: dict
+    transport: str = "serial"  # serial | telnet | ssh | tcp | rfc2217
     line_ending: str = "CR"  # default for send_text/query_text on this connection
     prompt: str | None = None  # default prompt for read_until_prompt/query_text
     prompt_regex: bool = False
@@ -178,11 +202,24 @@ class Connection:
     def reader_alive(self) -> bool:
         return self.reader is not None and self.reader.is_alive()
 
+    @property
+    def is_network(self) -> bool:
+        return self.transport != "serial"
+
     def describe_settings(self) -> str:
         s = self.settings
         flow = _flow_desc(bool(s.get("rtscts")), bool(s.get("xonxoff")))
-        return (f"{s['port']} at {s['baud']} baud ({s['bytesize']}{s['parity']}{s['stopbits']}, "
-                f"flow control {flow})")
+        serial_part = (f"{s['baud']} baud ({s['bytesize']}{s['parity']}{s['stopbits']}, "
+                       f"flow control {flow})")
+        if self.transport == "serial":
+            return f"{s['port']} at {serial_part}"
+        if self.transport == "rfc2217":
+            return (f"RFC 2217 to {transports._hostport(s['host'], s['tcp_port'])}, remote "
+                    f"port at {serial_part}")
+        try:
+            return self.port.describe()
+        except Exception:
+            return s["port"]
 
 
 _conns: dict[str, Connection] = {}
@@ -205,6 +242,105 @@ def _derive_name(port: str) -> str:
     return base or port
 
 
+def _host_allowed(host: str) -> str | None:
+    """None if network transports may reach `host`, else the refusal."""
+    rule = NETWORK_HOSTS
+    if not rule:
+        return None
+    if rule.lower() in ("none", "off", "0", "no", "false"):
+        return ("Network transports are turned off (SERIAL_CONSOLE_NETWORK_HOSTS=none). "
+                "Only local serial ports can be opened.")
+    pats = [x for x in re.split(r"[,\s]+", rule) if x]
+    try:
+        ip = ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        ip = None
+    for pat in pats:
+        if "/" in pat and ip is not None:
+            try:
+                if ip in ipaddress.ip_network(pat, strict=False):
+                    return None
+            except ValueError:
+                pass
+        elif fnmatch.fnmatch(host.lower(), pat.lower()):
+            return None
+    return (f"{host} is not in the hosts this server may reach "
+            f"(SERIAL_CONSOLE_NETWORK_HOSTS={rule}). Ask the user to add it if it is theirs.")
+
+
+def _net_target(transport: str, host: str, tcp_port: int | None, username: str = "") -> str:
+    """Canonical text for a network target; also the connection's `port` setting."""
+    user = f"{username}@" if (transport == "ssh" and username) else ""
+    where = transports._hostport(host, tcp_port) if tcp_port else (
+        f"[{host}]" if ":" in host else host)
+    return f"{transport}://{user}{where}"
+
+
+def _parse_target(port: str, transport: str, host: str, tcp_port: int | None,
+                  username: str) -> tuple[dict | None, str | None]:
+    """Work out (transport, host, tcp_port, username, target) from connect's args.
+
+    Accepts a URL in `port` ("telnet://cs1:2003", "ssh://admin@bench-pi",
+    "tcp://10.0.0.5:4001", "rfc2217://ser2net:3001"), or transport + host (+ tcp_port),
+    with "host:port" allowed in `host`."""
+    transport = transport or "serial"
+    if "://" in port:
+        try:
+            u = urlsplit(port)
+            u_port = u.port
+        except ValueError as e:
+            return None, f"Could not read {port!r} as a network address: {e}"
+        scheme = _SCHEMES.get(u.scheme.lower())
+        if scheme is None:
+            return None, (f"Unknown scheme {u.scheme!r} in {port!r}. Use telnet://, ssh://, "
+                          f"tcp:// or rfc2217://.")
+        if transport not in ("serial", scheme):
+            return None, f"{port!r} is a {scheme} address but transport={transport!r} was given."
+        if u.password:
+            return None, ("Never put a password in the address. Store it with "
+                          "`serial-console-mcp credential set NAME` (in a terminal, not in "
+                          "the chat) and pass credential=NAME.")
+        if host and u.hostname and host.lower() != u.hostname.lower():
+            return None, f"{port!r} names host {u.hostname!r} but host={host!r} was given."
+        if tcp_port and u_port and int(tcp_port) != u_port:
+            return None, f"{port!r} names port {u_port} but tcp_port={tcp_port} was given."
+        transport, host = scheme, u.hostname or host
+        tcp_port = u_port or tcp_port
+        username = u.username or username
+    elif transport == "serial":
+        if not port:
+            return None, ("Give the serial port name (see list_serial_ports), or a network "
+                          "transport with a host: transport=\"telnet\", host=\"cs1\", "
+                          "tcp_port=2003.")
+        return {"transport": "serial", "host": "", "tcp_port": None, "username": "",
+                "target": port}, None
+    else:
+        host = host or port
+        if host.count(":") == 1 and not tcp_port:
+            h, _, pt = host.partition(":")
+            if pt.isdigit():
+                host, tcp_port = h, int(pt)
+    host = (host or "").strip().strip("[]")
+    if not host:
+        return None, f"transport={transport!r} needs a host (name, address or ~/.ssh/config alias)."
+    if tcp_port is None:
+        tcp_port = _DEFAULT_TCP_PORT.get(transport)
+        if tcp_port is None and transport in ("tcp", "rfc2217"):
+            what = "raw TCP" if transport == "tcp" else "RFC 2217"
+            return None, (f"{what} needs tcp_port: the device server's port for this serial "
+                          f"line (ser2net and console servers usually use 2000-4000+).")
+    if tcp_port is not None and not (1 <= int(tcp_port) <= 65535):
+        return None, f"tcp_port must be 1..65535 (got {tcp_port})."
+    tcp_port = int(tcp_port) if tcp_port is not None else None
+    return {"transport": transport, "host": host, "tcp_port": tcp_port, "username": username,
+            "target": _net_target(transport, host, tcp_port, username)}, None
+
+
+def _derive_net_name(host: str, tcp_port: int | None) -> str:
+    base = re.sub(r"[^A-Za-z0-9._-]+", "-", host).strip("-") or "net"
+    return f"{base}-{tcp_port}" if tcp_port else base
+
+
 def _resolve(connection: str = "", strict: bool = True) -> tuple[Connection | None, str | None]:
     """Find the connection a tool should act on; return (conn, None) or (None, error)."""
     if not _conns:
@@ -221,6 +357,13 @@ def _resolve(connection: str = "", strict: bool = True) -> tuple[Connection | No
         return None, f"Connection {conn.name!r} is closed. Run disconnect, then connect again."
     if not conn.reader_alive:
         why = f" ({conn.reader_error})" if conn.reader_error else ""
+        if conn.is_network:
+            return None, (
+                f"The {conn.transport} connection {conn.name!r} has stopped{why}. The remote "
+                f"end closed it (a console server's idle timeout, another user taking the "
+                f"port, a reboot) or the network dropped. Run disconnect, then connect (or "
+                f"reconnect_last) again."
+            )
         return None, (
             f"The port for {conn.name!r} is open but its background reader has stopped{why}. "
             f"The device was probably unplugged or the port was taken by another program. "
@@ -272,6 +415,14 @@ def _recall() -> dict:
 def _remember(settings: dict) -> None:
     state = _recall()
     kept = {k: settings[k] for k in _SETTINGS_KEYS if k in settings}
+    if kept.get("transport", "serial") == "serial":
+        for k in ("transport", "host", "tcp_port", "username"):
+            kept.pop(k, None)
+    elif kept["transport"] != "rfc2217":  # serial framing does not apply
+        for k in ("baud", "bytesize", "parity", "stopbits", "rtscts", "xonxoff"):
+            kept.pop(k, None)
+    if not kept.get("credential"):
+        kept.pop("credential", None)
     state["connections"][settings["name"]] = kept
     state["default"] = settings["name"]
     try:
@@ -524,8 +675,11 @@ def _guard_lines() -> str | None:
     return None
 
 
-def _write(conn: Connection, payload: bytes) -> str | None:
-    """Write to the port; return an error message on failure, else None."""
+def _write(conn: Connection, payload: bytes, secret: bool = False) -> str | None:
+    """Write to the port; return an error message on failure, else None.
+
+    `secret` marks a stored credential: it is sent, but an annotated capture
+    records only that something hidden was sent."""
     try:
         conn.port.write(payload)
         conn.port.flush()
@@ -534,8 +688,11 @@ def _write(conn: Connection, payload: bytes) -> str | None:
         if isinstance(e, serial.SerialTimeoutException) and conn.settings.get("rtscts"):
             hint = (" RTS/CTS flow control is on and the device never asserted CTS; "
                     "check the cable wiring or reconnect with rtscts=False.")
+        elif conn.is_network:
+            hint = (f" The {conn.transport} connection has probably dropped; run disconnect, "
+                    f"then reconnect_last.")
         return f"Write failed: {e}.{hint}"
-    _capture_write(conn, "TX", payload)
+    _capture_write(conn, "TX", b"<credential hidden>" if secret else payload)
     return None
 
 
@@ -636,12 +793,16 @@ def list_serial_ports() -> str:
     you can guess which one is the user's gear. Ports already open here are marked.
     """
     ports = list(serial.tools.list_ports.comports())
+    net = [f"  • {c.name}: {c.settings['port']}" for c in _conns.values() if c.is_network]
+    net_txt = ("\nNetwork connections open here:\n" + "\n".join(net)) if net else ""
     if not ports:
         return (
             "No serial ports found.\n"
             "Things to check: is the device powered on? Is the USB cable a real "
             "data cable (not charge-only)? On Windows, does it show up under "
-            "Device Manager > Ports (COM & LPT)?"
+            "Device Manager > Ports (COM & LPT)? A console on the network (console "
+            "server, ser2net, SSH) needs connect with transport and host instead."
+            + net_txt
         )
     open_ports = {c.settings["port"]: c.name for c in _conns.values()}
     lines = ["Serial ports found:"]
@@ -655,7 +816,7 @@ def list_serial_ports() -> str:
         "to a device. Not sure of the baud rate? Try detect_baud. Not sure which "
         "settings a device wants? See list_presets."
     )
-    return "\n".join(lines)
+    return "\n".join(lines) + net_txt
 
 
 @mcp.tool()
@@ -671,9 +832,181 @@ def list_presets() -> str:
     return describe_presets()
 
 
+def _open_serial(port, baud, bytesize, parity, stopbits, rtscts, xonxoff):
+    """Open a local serial port; return (serial.Serial, None) or (None, error)."""
+    try:
+        return serial.Serial(
+            port=port,
+            baudrate=baud,
+            bytesize=bytesize,
+            parity=_PARITY[parity],
+            stopbits=_STOPBITS[stopbits],
+            timeout=_READER_POLL,  # short, so the reader stays responsive to stop
+            write_timeout=_WRITE_TIMEOUT,
+            rtscts=rtscts,
+            xonxoff=xonxoff,
+        ), None
+    except ValueError as e:
+        # pyserial rejects impossible settings (baud 0, 9 data bits, ...) this way.
+        return None, f"Invalid serial settings for {port}: {e}"
+    except (serial.SerialException, OSError) as e:
+        msg = str(e)
+        hint = ""
+        low = msg.lower()
+        # Check "not found" first: pyserial phrases a missing device as "could not
+        # open port X: [Errno 2] No such file or directory", which would otherwise
+        # trip the "in use" hint below.
+        if "filenotfound" in low or "no such" in low or "errno 2]" in low:
+            hint = (
+                "\nThat port name wasn't found. Run list_serial_ports to see the "
+                "exact current names — they can change when you replug the cable."
+            )
+        elif "could not open" in low or "access" in low or "denied" in low or "busy" in low:
+            holder = _port_holder(port)
+            who = f" It is held by {holder}." if holder else ""
+            hint = (
+                f"\nThat port is probably already in use.{who} Close any logging or "
+                "device-control software that might be holding it (a terminal, "
+                "minicom/PuTTY, WSJT-X, a contest logger, the Arduino Serial "
+                "Monitor) and try again. A serial port can only be open in one "
+                "program at a time."
+            )
+        return None, f"Could not open {port}: {msg}{hint}"
+
+
+def _net_error(transport: str, host: str, tcp_port: int | None, e: BaseException) -> str:
+    where = transports._hostport(host, tcp_port) if tcp_port else host
+    if isinstance(e, socket.gaierror):
+        return (f"Could not resolve {host!r} ({e}). Check the name, or use the address; "
+                f"for ssh, a Host alias must be in ~/.ssh/config.")
+    if isinstance(e, ConnectionRefusedError):
+        return (f"{where} refused the {transport} connection: nothing is listening there. "
+                f"On a console server, check the port number for this serial line (for "
+                f"example 2000+line for Cisco reverse telnet, 3000+port for raw TCP on many "
+                f"Opengear and Lantronix units) and that the port is enabled.")
+    if isinstance(e, (TimeoutError, socket.timeout)):
+        return f"Connecting to {where} timed out. Check the address, the port and the network."
+    if isinstance(e, serial.SerialException) and "rfc2217" in str(e).lower():
+        return (f"{where} answered but does not speak RFC 2217 ({e}). Connect with "
+                f"transport=\"telnet\" (BREAK only) or \"tcp\" instead, or enable RFC 2217 "
+                f"on the device server's port.")
+    return f"Could not connect to {where} over {transport}: {e}"
+
+
+def _open_network(transport, host, tcp_port, username, cred, term, cols, rows,
+                  baud, bytesize, parity, stopbits, rtscts, xonxoff):
+    """Open a network transport; return (transport object, None) or (None, error)."""
+    try:
+        if transport == "telnet":
+            return transports.TelnetTransport(host, tcp_port, timeout=_READER_POLL,
+                                              term_type=term, cols=cols, rows=rows), None
+        if transport == "tcp":
+            return transports.TcpTransport(host, tcp_port, timeout=_READER_POLL), None
+        if transport == "rfc2217":
+            return transports.open_rfc2217(
+                host, tcp_port, baudrate=baud, bytesize=bytesize, parity=_PARITY[parity],
+                stopbits=_STOPBITS[stopbits], rtscts=rtscts, xonxoff=xonxoff,
+                timeout=_READER_POLL), None
+        if transport == "ssh":
+            from . import ssh_transport
+            try:
+                return ssh_transport.SSHTransport(
+                    host, tcp_port, username=username,
+                    password=cred.password if cred is not None else None,
+                    timeout=_READER_POLL, term_type=term, cols=cols, rows=rows), None
+            except ssh_transport.SSHSetupError as e:
+                return None, str(e)
+    except (OSError, serial.SerialException, ValueError) as e:
+        return None, _net_error(transport, host, tcp_port, e)
+    return None, f"Unknown transport {transport!r}."
+
+
+# A console server's (or device's) own login prompts, at the end of the received text.
+_USER_PROMPT = r"(?:user ?name|login|user)\s*:\s*$"
+_PASS_PROMPT = r"pass(?:word|code|phrase)?\s*:\s*$"
+_LOGIN_RE = re.compile(rf"(?i)(?:{_USER_PROMPT}|{_PASS_PROMPT})")
+_LOGIN_FAILED = re.compile(r"(?i)incorrect|denied|fail|invalid|bad password|try again")
+_LOGIN_TIMEOUT = 15.0
+# After the password: this long without another login prompt counts as logged in.
+_LOGIN_SETTLE = 3.0
+
+
+def _console_login(conn: Connection, username: str, cred) -> str:
+    """Answer login/password prompts right after connecting, from a stored credential.
+
+    Waits for "login:"/"Username:" (sends `username`) and "Password:" (sends the
+    stored password, hidden from captures and from what is returned). Output
+    after the login stays buffered for the next read. Returns a summary line."""
+    ending = _LINE_ENDINGS[conn.line_ending] or "\r"
+    deadline = time.time() + _LOGIN_TIMEOUT
+    seen = bytearray()
+    sent_user = sent_pw = nudged = False
+    result = ""
+    while True:
+        left = deadline - time.time()
+        if left <= 0:
+            result = "timed out waiting for a login prompt"
+            break
+        # After the password, a short wait decides: another prompt means failure.
+        wait = min(left, _LOGIN_SETTLE if sent_pw else
+                   (2.0 if not nudged and not sent_user else left))
+        matched, data, _ = _read_until(conn, _LOGIN_RE, wait)
+        if not matched:
+            if sent_pw:
+                _pushback(conn, data)
+                failed = _LOGIN_FAILED.search(data.decode("latin-1"))
+                result = ("login seems to have FAILED: " + _render(data, conn).strip()[-200:]
+                          if failed else "logged in")
+                break
+            seen.extend(data)
+            if not nudged and not sent_user:
+                nudged = True  # nothing yet: a return usually draws the prompt
+                if err := _write(conn, ending.encode()):
+                    return f"Console login: {err}"
+                continue
+            result = "no login prompt appeared, nothing sent"
+            break
+        seen.extend(data)
+        text = data.decode("latin-1")
+        is_pw = re.search(rf"(?i){_PASS_PROMPT}", text) is not None
+        if is_pw:
+            if sent_pw:
+                result = "the password was asked for again: login FAILED (wrong password?)"
+                break
+            if err := _write(conn, (cred.password + ending).encode("utf-8"), secret=True):
+                return f"Console login: {err}"
+            sent_pw = True
+            continue
+        # a user-name prompt
+        if sent_pw:
+            if _LOGIN_FAILED.search(text):
+                result = "login FAILED: " + _render(data, conn).strip()[-200:]
+            else:  # probably the device's own login now, behind the console server
+                _pushback(conn, data)
+                seen = seen[:len(seen) - len(data)]
+                result = "logged in; another login prompt followed (likely the device's own)"
+            break
+        if sent_user:
+            result = "the user name was asked for twice: login FAILED"
+            break
+        if not username:
+            result = ("a user name was asked for but none is known: pass username=... or "
+                      "store one with the credential (--username)")
+            break
+        if err := _write(conn, (username + ending).encode("utf-8")):
+            return f"Console login: {err}"
+        sent_user = True
+    shown = _render(bytes(seen), conn).strip()
+    who = f"user {username!r}, " if sent_user else ""
+    sent = f"sent {who}password from credential {cred.name!r} (hidden)" if sent_pw else (
+        f"sent {who}no password")
+    tail = f"\nLogin dialogue:\n{shown[-600:]}" if shown else ""
+    return f"Console login: {result}; {sent}.{tail}"
+
+
 @mcp.tool()
 def connect(
-    port: str,
+    port: str = "",
     preset: str = "",
     name: str = "",
     baud: int | None = None,
@@ -688,8 +1021,13 @@ def connect(
     terminal: Terminal | None = None,
     cols: int | None = None,
     rows: int | None = None,
+    transport: TransportName = "serial",
+    host: str = "",
+    tcp_port: int | None = None,
+    username: str = "",
+    credential: str = "",
 ) -> str:
-    """Open a serial port and start its background reader.
+    """Open a serial port, or a console over the network, and start its background reader.
 
     Defaults are 9600 baud, 8 data bits, no parity, 1 stop bit, no flow control
     ("9600 8N1"), CR line ending, which is what most console/craft ports expect.
@@ -701,10 +1039,21 @@ def connect(
     control panels, UPS and PDU menus and lab instruments; choose `terminal` by
     what the device prints.
 
+    Network consoles work the same way once open (every read, expect, capture
+    and screen tool): transport="telnet" for a console server's reverse-telnet
+    port or ser2net, "rfc2217" when the server also lets us set baud, DTR/RTS
+    and BREAK, "tcp" for raw TCP, "ssh" for a shell or a console server's
+    per-port SSH. Or pass a URL as `port`: "telnet://cs1:2003",
+    "ssh://admin@bench-pi", "tcp://10.0.0.5:4001", "rfc2217://ser2net:3001".
+    Passwords are NEVER passed or typed here: SSH uses the user's agent, keys and
+    ~/.ssh/config (host aliases work; the host key must already be in
+    known_hosts); a password login uses `credential`, the name of a password
+    the user stored themselves with `serial-console-mcp credential set NAME`.
+
     Args:
         port: System port name, e.g. "COM4" (Windows), "/dev/cu.usbserial-10"
             (macOS), or "/dev/ttyUSB0" (Linux). Get exact names from
-            `list_serial_ports`.
+            `list_serial_ports`. Or a network URL (see above).
         preset: Device preset name such as "cisco-console", "juniper-craft",
             "kenwood-cat", "icom-civ", "yaesu-rotator", "arduino", "nmea-gps".
         name: Nickname for this connection ("rig", "rotator"). Defaults to the
@@ -736,6 +1085,21 @@ def connect(
             `screen` tool, navigate with `send_keys`.
         cols: Screen width for vt100/xterm (default 80).
         rows: Screen height for vt100/xterm (default 24).
+        transport: "serial" (default), "telnet", "ssh", "tcp" or "rfc2217".
+            Baud, parity and flow control apply to serial and rfc2217 only;
+            over telnet, tcp and ssh the console server's port settings decide.
+        host: Host name, address or ~/.ssh/config alias for a network transport.
+            "host:port" is accepted.
+        tcp_port: TCP port. telnet defaults to 23 and ssh to ~/.ssh/config or
+            22; tcp and rfc2217 need it (console servers and ser2net map each
+            serial line to its own port, often 2000-4000+).
+        username: Login name for ssh (else ~/.ssh/config User, else the local
+            user) or for a console server's telnet login. Not a secret.
+        credential: NAME of a stored password, never the password itself. For
+            ssh it is offered for password/keyboard-interactive login; for
+            telnet/tcp/serial it answers the console server's own "login:" and
+            "Password:" prompts right after connecting. For a device's own
+            login later, use expect with send_credential.
     """
     global _default_name
     p = {}
@@ -749,6 +1113,8 @@ def connect(
             return explicit
         return p.get(key, default) if p else default
 
+    baud_arg, bytesize_arg, parity_arg = baud, bytesize, parity
+    stopbits_arg, rtscts_arg, xonxoff_arg = stopbits, rtscts, xonxoff
     baud = pick(baud, "baud", 9600)
     bytesize = pick(bytesize, "bytesize", 8)
     parity = pick(parity, "parity", "N")
@@ -761,7 +1127,15 @@ def connect(
     term = pick(terminal, "terminal", "dumb")
     cols = int(pick(cols, "cols", 80))
     rows = int(pick(rows, "rows", 24))
-    name = name or _derive_name(port)
+    tgt, err = _parse_target(port, transport, host, tcp_port, username)
+    if err:
+        return err
+    transport, host, tcp_port = tgt["transport"], tgt["host"], tgt["tcp_port"]
+    username, port = tgt["username"], tgt["target"]
+    if transport in _NETWORK and (err := _host_allowed(host)):
+        return err
+    name = name or (_derive_name(port) if transport == "serial"
+                    else _derive_net_name(host, tcp_port))
     if term not in terminal_module.TERMINALS:
         return f"terminal must be one of {', '.join(terminal_module.TERMINALS)} (got {term!r})."
     if not (20 <= cols <= 500 and 5 <= rows <= 200):
@@ -789,54 +1163,35 @@ def connect(
             return (f"A connection named {name!r} is already open on "
                     f"{existing.settings['port']}. Pick another name, or disconnect it first.")
 
-    try:
-        ser = serial.Serial(
-            port=port,
-            baudrate=baud,
-            bytesize=bytesize,
-            parity=_PARITY[parity],
-            stopbits=_STOPBITS[stopbits],
-            timeout=_READER_POLL,  # short, so the reader stays responsive to stop
-            write_timeout=_WRITE_TIMEOUT,
-            rtscts=rtscts,
-            xonxoff=xonxoff,
-        )
-    except ValueError as e:
-        # pyserial rejects impossible settings (baud 0, 9 data bits, ...) this way.
-        return f"Invalid serial settings for {port}: {e}"
-    except (serial.SerialException, OSError) as e:
-        msg = str(e)
-        hint = ""
-        low = msg.lower()
-        # Check "not found" first: pyserial phrases a missing device as "could not
-        # open port X: [Errno 2] No such file or directory", which would otherwise
-        # trip the "in use" hint below.
-        if "filenotfound" in low or "no such" in low or "errno 2]" in low:
-            hint = (
-                "\nThat port name wasn't found. Run list_serial_ports to see the "
-                "exact current names — they can change when you replug the cable."
-            )
-        elif "could not open" in low or "access" in low or "denied" in low or "busy" in low:
-            holder = _port_holder(port)
-            who = f" It is held by {holder}." if holder else ""
-            hint = (
-                f"\nThat port is probably already in use.{who} Close any logging or "
-                "device-control software that might be holding it (a terminal, "
-                "minicom/PuTTY, WSJT-X, a contest logger, the Arduino Serial "
-                "Monitor) and try again. A serial port can only be open in one "
-                "program at a time."
-            )
-        return f"Could not open {port}: {msg}{hint}"
+    cred = None
+    if credential:
+        try:
+            cred = credentials.lookup(credential, _state_dir())
+        except credentials.CredentialError as e:
+            return str(e)
+        username = username or cred.username
+        if transport == "ssh" and tgt["username"] != username:
+            port = _net_target(transport, host, tcp_port, username)
+
+    if transport == "serial":
+        ser, err = _open_serial(port, baud, bytesize, parity, stopbits, rtscts, xonxoff)
+    else:
+        ser, err = _open_network(transport, host, tcp_port, username, cred, term, cols, rows,
+                                 baud, bytesize, parity, stopbits, rtscts, xonxoff)
+    if err:
+        return err
 
     settings = {
         "port": port, "name": name, "preset": preset, "baud": baud, "bytesize": bytesize,
         "parity": parity, "stopbits": stopbits, "rtscts": rtscts, "xonxoff": xonxoff,
         "line_ending": line_ending, "prompt": prompt, "prompt_regex": prompt_regex,
         "terminal": term, "cols": cols, "rows": rows,
+        "transport": transport, "host": host, "tcp_port": tcp_port, "username": username,
+        "credential": credential,
     }
     conn = Connection(name=name, port=ser, settings=settings, line_ending=line_ending,
                       prompt=prompt, prompt_regex=prompt_regex, preset=preset,
-                      terminal=term, cols=cols, rows=rows)
+                      terminal=term, cols=cols, rows=rows, transport=transport)
     screen_note = ""
     if term != "dumb":
         conn.stripper = terminal_module.EscapeStripper()
@@ -862,6 +1217,10 @@ def connect(
     _remember(settings)
     _ensure_idle_thread()
 
+    login_note = ""
+    if cred is not None and transport != "ssh":
+        login_note = "\n" + _console_login(conn, username, cred)
+
     if prompt is None:
         pd = "none (reads until idle)"
     else:
@@ -871,10 +1230,25 @@ def connect(
     multi = f"\nOther open connections: {', '.join(others)}." if others else ""
     ro = "\nREAD-ONLY MODE is on: only read-style commands will be sent." if READ_ONLY else ""
     tdesc = conn.terminal + (f" {cols}x{rows}" if conn.screen is not None else "")
+    net = ""
+    if transport in ("telnet", "tcp", "ssh"):
+        explicit = [k for k, v in (("baud", baud_arg), ("bytesize", bytesize_arg),
+                                   ("parity", parity_arg), ("stopbits", stopbits_arg),
+                                   ("rtscts", rtscts_arg), ("xonxoff", xonxoff_arg))
+                    if v is not None]
+        caps = transports.capabilities(ser)
+        lines_note = ("BREAK works (send_break); DTR/RTS do not travel over "
+                      f"{transport}." if "break" in caps else
+                      "Bytes only: no BREAK, DTR/RTS or baud control over raw TCP.")
+        net = f"\n{lines_note}"
+        if explicit:
+            net += (f" {', '.join(explicit)} not applied: over {transport} the console "
+                    f"server's port settings decide them (transport=\"rfc2217\" sets them "
+                    f"remotely where the server supports it).")
     return (
         f"Connected {name!r}: {conn.describe_settings()}. Line ending {line_ending}, "
         f"prompt {pd}, terminal {tdesc}. Background reader running.{screen_note}"
-        f"{note}{multi}{ro}\n"
+        f"{net}{note}{multi}{ro}{login_note}\n"
         f"For an interactive console, send a bare return then read_until_prompt."
     )
 
@@ -884,9 +1258,11 @@ def reconnect_last(name: str = "") -> str:
     """Reconnect to a remembered port with the same settings as last time.
 
     Every successful connect is remembered by name across sessions (port, baud,
-    flow control, line ending, prompt, preset). With no `name`, reopens the most
-    recently used one. Handy at the start of a chat so the user doesn't repeat the
-    port and baud rate. If nothing is remembered, says to use `connect` instead.
+    flow control, line ending, prompt, preset; for network consoles the
+    transport, host, TCP port, user name and credential NAME, never a secret).
+    With no `name`, reopens the most recently used one. Handy at the start of a
+    chat so the user doesn't repeat the port and baud rate. If nothing is
+    remembered, says to use `connect` instead.
     """
     state = _recall()
     if not state["connections"]:
@@ -933,22 +1309,26 @@ def disconnect(connection: str = "", all_connections: bool = False) -> str:
 
 @mcp.tool()
 def status() -> str:
-    """Report every open port: settings, reader state, buffered bytes, control-line
-    states, capture, and which connection is current. With nothing open, lists
-    what reconnect_last remembers."""
+    """Report every open port or network console: settings, transport, reader
+    state, buffered bytes, control-line states (or why a transport has none),
+    capture, and which connection is current. With nothing open, lists what
+    reconnect_last remembers."""
     lines = []
     if READ_ONLY:
         lines.append("READ-ONLY MODE (SERIAL_CONSOLE_READ_ONLY): "
                      "only read-style commands are sent.")
     if IDLE_MINUTES > 0:
         lines.append(f"Idle auto-close after {IDLE_MINUTES:g} min (SERIAL_CONSOLE_IDLE_MINUTES).")
+    if NETWORK_HOSTS:
+        lines.append(f"Network hosts limited to: {NETWORK_HOSTS} (SERIAL_CONSOLE_NETWORK_HOSTS).")
     for name, why in _idle_notes.items():
         lines.append(f"Note: {name!r} was {why}.")
     if not _conns:
         state = _recall()
         if state["connections"]:
-            rem = ", ".join(f"{n} ({s['port']} at {s['baud']})"
-                            for n, s in state["connections"].items())
+            rem = ", ".join(
+                f"{n} ({s['port']}{' at ' + str(s['baud']) if 'baud' in s else ''})"
+                for n, s in state["connections"].items())
             dflt = f" (default {state['default']!r})" if state["default"] else ""
             lines.append(f"Not connected. Remembered: {rem}. Try reconnect_last{dflt}.")
         else:
@@ -963,17 +1343,7 @@ def status() -> str:
             reader = "STOPPED" + (f" ({conn.reader_error})" if conn.reader_error else "") + \
                 " — run disconnect then connect again"
         extra = f" ({dropped} older bytes discarded: buffer filled up)" if dropped else ""
-        ctl = []
-        for line in ("cts", "dsr", "cd", "ri"):
-            try:
-                ctl.append(f"{line.upper()}={'1' if getattr(conn.port, line) else '0'}")
-            except Exception:
-                pass
-        for line in ("dtr", "rts"):
-            try:
-                ctl.append(f"{line.upper()}={'1' if getattr(conn.port, line) else '0'}")
-            except Exception:
-                pass
+        ctl = _line_states(conn)
         cap = ""
         if conn.capture_path:
             cap = f" Capturing to {conn.capture_path} ({conn.capture_bytes} bytes)."
@@ -987,9 +1357,38 @@ def status() -> str:
             f"{name!r}{star}: {conn.describe_settings()}"
             f"{', preset ' + conn.preset if conn.preset else ''}; line ending {conn.line_ending}, "
             f"prompt {pd}, terminal {tdesc}. Reader {reader}; {buffered} bytes buffered{extra}. "
-            f"Lines: {' '.join(ctl) or 'n/a'}.{cap}"
+            f"Lines: {ctl or 'n/a'}.{cap}"
         )
     return "\n".join(lines)
+
+
+def _line_states(conn: Connection) -> str:
+    """Modem/control line states as text, or why the transport has none."""
+    caps = transports.capabilities(conn.port)
+    if "lines" not in caps:
+        if "break" in caps:
+            return f"n/a ({conn.transport}: no modem lines; BREAK works)"
+        return f"n/a ({conn.transport}: bytes only)"
+    ctl = []
+    if conn.transport == "rfc2217":
+        # One poll for all four inputs, not one network round trip per line.
+        try:
+            import serial.rfc2217 as r2
+            st = conn.port.get_modem_state()
+            for nm, mask in (("CTS", r2.MODEMSTATE_MASK_CTS), ("DSR", r2.MODEMSTATE_MASK_DSR),
+                             ("CD", r2.MODEMSTATE_MASK_CD), ("RI", r2.MODEMSTATE_MASK_RI)):
+                ctl.append(f"{nm}={'1' if st & mask else '0'}")
+        except Exception:
+            pass
+        inputs = ()
+    else:
+        inputs = ("cts", "dsr", "cd", "ri")
+    for line in (*inputs, "dtr", "rts"):
+        try:
+            ctl.append(f"{line.upper()}={'1' if getattr(conn.port, line) else '0'}")
+        except Exception:
+            pass
+    return " ".join(ctl)
 
 
 # ----------------------------------------------------------------------------
@@ -1202,6 +1601,10 @@ class ExpectStep(BaseModel):
 
     send: str | None = Field(None, description="Text to send (line ending appended).")
     send_hex: str | None = Field(None, description="Raw bytes to send as hex instead of text.")
+    send_credential: str | None = Field(
+        None, description="NAME of a stored credential whose password to send (line ending "
+                          "appended). The password never appears in the chat, the tool "
+                          "result or a capture. Never put a password in `send`.")
     line_ending: LineEnding | None = Field(
         None, description="Override the connection's line ending for this step.")
     expect: str | None = Field(
@@ -1218,9 +1621,11 @@ def expect(steps: list[ExpectStep], auto_reply: dict[str, str] | None = None,
 
     Use it for login flows and multi-step commands instead of one tool call per
     line: [{send: "", expect: "login: "}, {send: "admin", expect: "Password:"},
-    {send: "<pw>", expect: "> "}, {send: "show version", expect: "> "}]. Each
-    step's output is returned. A step with no `send` just waits; one with no
-    `expect` just sends.
+    {send_credential: "lab-switch", expect: "> "}, {send: "show version",
+    expect: "> "}]. Passwords go only by credential name (stored by the user
+    with `serial-console-mcp credential set NAME`); never ask for one in the
+    chat or put one in `send`. Each step's output is returned. A step with no
+    `send` just waits; one with no `expect` just sends.
 
     Args:
         steps: The steps, in order.
@@ -1249,6 +1654,18 @@ def expect(steps: list[ExpectStep], auto_reply: dict[str, str] | None = None,
                 out.append(f"Step {i}: {err}; stopped.")
                 break
             sent = f"sent hex {payload.hex(' ')}"
+        elif st.send_credential is not None:
+            try:
+                cred = credentials.lookup(st.send_credential, _state_dir())
+            except credentials.CredentialError as e:
+                out.append(f"Step {i}: {e}; stopped.")
+                break
+            ending = st.line_ending or conn.line_ending
+            payload = (cred.password + _LINE_ENDINGS[ending]).encode("utf-8")
+            if err := _write(conn, payload, secret=True):
+                out.append(f"Step {i}: {err}; stopped.")
+                break
+            sent = f"sent credential {cred.name!r} (hidden)+{ending}"
         elif st.send is not None:
             if err := _guard_text(st.send):
                 out.append(f"Step {i}: {err}; stopped.")
@@ -1364,7 +1781,8 @@ def set_lines(dtr: bool | None = None, rts: bool | None = None, connection: str 
     Uses: key a transmitter whose PTT is wired to RTS or DTR (set it True to
     transmit, False to stop; pulse_line is safer for that), hold an Arduino in
     reset (DTR False), or tell a modem you're present. Leave a line at None to keep
-    it unchanged. Refused in read-only mode.
+    it unchanged. Works on local serial ports and rfc2217; telnet, ssh and tcp
+    carry no modem lines and say so. Refused in read-only mode.
     """
     conn, err = _resolve(connection)
     if conn is None:
@@ -1373,6 +1791,8 @@ def set_lines(dtr: bool | None = None, rts: bool | None = None, connection: str 
         return err
     if dtr is None and rts is None:
         return "Nothing to do: give dtr and/or rts."
+    if "lines" not in transports.capabilities(conn.port):
+        return transports.unsupported(conn.port, "Setting DTR/RTS")
     try:
         if dtr is not None:
             conn.port.dtr = dtr
@@ -1390,13 +1810,16 @@ def pulse_line(line: ControlLine, ms: int = 100, level: bool = True, connection:
 
     Uses: reset an Arduino (DTR, 100 ms), enter a bootloader, or key a rig's PTT
     for a timed transmission (RTS or DTR per the interface's wiring). The line is
-    always restored, even if the wait is interrupted. Refused in read-only mode.
+    always restored, even if the wait is interrupted. Local serial and rfc2217
+    only. Refused in read-only mode.
     """
     conn, err = _resolve(connection)
     if conn is None:
         return err
     if err := _guard_lines():
         return err
+    if "lines" not in transports.capabilities(conn.port):
+        return transports.unsupported(conn.port, f"Pulsing {line}")
     ms = max(1, min(int(ms), 60_000))
     attr = line.lower()
     try:
@@ -1417,18 +1840,28 @@ def send_break(ms: int = 250, connection: str = "") -> str:
     """Send a BREAK condition (TX held low) for `ms` milliseconds.
 
     Some consoles use BREAK to enter ROMMON or interrupt boot; some serial
-    devices use it as an attention signal. Refused in read-only mode.
+    devices use it as an attention signal. Over telnet it is sent as IAC BRK
+    (the console server picks the length), over ssh as a break request, over
+    rfc2217 as a timed break on the remote port; raw tcp cannot send one.
+    Refused in read-only mode.
     """
     conn, err = _resolve(connection)
     if conn is None:
         return err
     if err := _guard_lines():
         return err
+    if "break" not in transports.capabilities(conn.port):
+        return transports.unsupported(conn.port, "BREAK")
     ms = max(1, min(int(ms), 5000))
     try:
         conn.port.send_break(duration=ms / 1000)
     except Exception as e:
         return f"Could not send BREAK: {e}"
+    if conn.transport == "telnet":
+        return (f"Sent BREAK on {conn.name!r} as telnet IAC BRK; the console server holds "
+                f"the line for its own configured break time (ms is not carried).")
+    if conn.transport == "ssh":
+        return f"Sent an SSH break request ({ms} ms) on {conn.name!r}."
     return f"Sent BREAK for {ms} ms on {conn.name!r}."
 
 
@@ -1533,6 +1966,10 @@ def port_in_use_by(port: str) -> str:
     something. On Windows the OS doesn't expose this; the usual suspects are a
     terminal (PuTTY), WSJT-X, a logger, or the Arduino Serial Monitor.
     """
+    if "://" in port:
+        return ("That is a network target; no local program holds it. A console server "
+                "port usually takes one session at a time: check the console server's "
+                "active sessions (or ser2net's) for whoever has the line.")
     if os.name == "nt":
         return ("Windows doesn't report which process holds a COM port. Close terminals, "
                 "WSJT-X, loggers, and the Arduino Serial Monitor, then try again.")
@@ -1565,6 +2002,10 @@ def detect_baud(port: str, probe: str = "", probe_line_ending: LineEnding = "CR"
             4800, 2400, 1200, 230400.
         settle: Seconds to wait for a reply at each rate.
     """
+    if "://" in port:
+        return ("detect_baud works on a local serial port. Over rfc2217, reconnect with "
+                "another baud to try it; over telnet, ssh or tcp the console server's port "
+                "settings decide the baud, so change them there.")
     if port in {c.settings["port"] for c in _conns.values()}:
         return f"{port} is open here; disconnect it first, then detect_baud."
     rates = candidates or _BAUD_CANDIDATES
@@ -1759,6 +2200,8 @@ def main(argv: list[str] | None = None) -> None:
     args = sys.argv[1:] if argv is None else argv
     if args and args[0] == "configure":
         raise SystemExit(configure.main(args[1:]))
+    if args and args[0] in ("credential", "credentials"):
+        raise SystemExit(credentials.cli(args[1:], _state_dir()))
     if args and args[0] in ("--version", "-V"):
         from . import __version__
         print(f"serial-console-mcp {__version__}")

@@ -71,9 +71,15 @@ freeze = [
     "mcp[cli]>=1.2.0,<2",
     "pyinstaller>=6.0",
     "pyte>=0.8.2",
+    "asyncssh>=2.14",
 ]
 screen = [
     "pyte>=0.8.2",
+]
+# The ssh transport (an interactive shell, or a console server's per-port SSH).
+# telnet, rfc2217 and raw tcp need nothing beyond pyserial.
+ssh = [
+    "asyncssh>=2.14",
 ]
 
 [dependency-groups]

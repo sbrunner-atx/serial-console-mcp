@@ -3,8 +3,8 @@
   "name": "serial-console-mcp",
   "display_name": "Serial Console (telecom, radio, any serial port)",
   "version": "0.3.3",
-  "description": "Let Claude configure telecommunication equipment and any other device over its serial console.",
-  "long_description": "An MCP server for serial ports. Drives Juniper Junos and Cisco IOS / IOS-XE console and craft ports, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, GS-232 antenna rotators, and anything else on a serial cable, in raw, ANSI or VT100 mode. A background reader drains the port the whole time it is open, so reads end at the device's prompt instead of a guessed delay. Includes device presets, control lines (DTR/RTS/BREAK), expect sequences, session capture, baud detection, and operating skills for Junos and IOS.",
+  "description": "Let Claude configure telecommunication equipment and any other device over its serial console, local or over telnet, RFC 2217, SSH or TCP.",
+  "long_description": "An MCP server for serial ports. Drives Juniper Junos and Cisco IOS / IOS-XE console and craft ports, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, GS-232 antenna rotators, and anything else on a serial cable, in raw, ANSI or VT100 mode. Consoles on the network work the same way: console servers' reverse-telnet and per-port SSH, ser2net and RFC 2217 device servers (remote baud, DTR/RTS, BREAK), raw TCP, and SSH shells, with SSH keys, agent and ~/.ssh/config, and passwords only from named credentials the user stores. A background reader drains the port the whole time it is open, so reads end at the device's prompt instead of a guessed delay. Includes device presets, control lines (DTR/RTS/BREAK), expect sequences, session capture, baud detection, and operating skills for Junos and IOS.",
   "author": {
     "name": "Stefan Brunner (AE5VG)",
     "email": "me@stefanbrunner.org",
@@ -40,11 +40,14 @@
         "${__dirname}",
         "--extra",
         "screen",
+        "--extra",
+        "ssh",
         "serial-console-mcp"
       ],
       "env": {
         "SERIAL_CONSOLE_READ_ONLY": "${user_config.read_only}",
-        "SERIAL_CONSOLE_IDLE_MINUTES": "${user_config.idle_minutes}"
+        "SERIAL_CONSOLE_IDLE_MINUTES": "${user_config.idle_minutes}",
+        "SERIAL_CONSOLE_NETWORK_HOSTS": "${user_config.network_hosts}"
       }
     }
   },
@@ -59,7 +62,7 @@
     },
     {
       "name": "connect",
-      "description": "Open a serial port and start its background reader."
+      "description": "Open a serial port, or a console over the network, and start its background reader."
     },
     {
       "name": "reconnect_last",
@@ -71,7 +74,7 @@
     },
     {
       "name": "status",
-      "description": "Report every open port: settings, reader state, buffered bytes, control-line states, capture, and which connection is current."
+      "description": "Report every open port or network console: settings, transport, reader state, buffered bytes, control-line states (or why a transport has none), capture, and which connection is current."
     },
     {
       "name": "send_text",
@@ -194,6 +197,13 @@
       "title": "Close an idle port after (minutes)",
       "description": "Free a port nobody has used for this long, so a forgotten connection stops blocking other programs. 0 disables it.",
       "default": 0
+    },
+    "network_hosts": {
+      "type": "string",
+      "title": "Network consoles allowed (hosts)",
+      "description": "Limit telnet, SSH, RFC 2217 and TCP connections to these hosts: names with * wildcards or address ranges such as 10.20.0.0/16, separated by commas. Empty allows any host; none turns network consoles off.",
+      "default": "",
+      "required": false
     }
   }
 }

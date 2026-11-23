@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install ".[screen]" pytest ruff
+      - run: pip install ".[screen,ssh]" pytest ruff
       - run: ruff check .
       - run: pytest -q
 
