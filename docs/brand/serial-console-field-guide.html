@@ -25,7 +25,8 @@
     telecommunication equipment through the console port it already has: Juniper and Cisco
     routers and switches, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, and GS-232
     antenna rotators, and it speaks to any other serial device too, raw, ANSI or VT100, from IoT
-    gateways to alarm and control panels. This guide shows how the agent reads the prompt instead of guessing, changes
+    gateways to alarm and control panels, on a local cable or across the bench network through a
+    console server, ser2net or SSH. This guide shows how the agent reads the prompt instead of guessing, changes
     configuration with a safety net, and hands the port back cleanly: everything a terminal
     program knows, explained for the operator who would rather ask.</p>
   </div>
@@ -63,6 +64,7 @@
   <div class="toc-row"><span class="tno">04</span><span class="tt"><a href="#shack">The shack — several ports, control lines, scripts, capture</a></span><span class="leader"></span><span class="tp"><a href="#shack"></a></span></div>
   <div class="toc-row"><span class="tno">05</span><span class="tt"><a href="#terminals">Terminals — clean text, keys, and a real screen</a></span><span class="leader"></span><span class="tp"><a href="#terminals"></a></span></div>
   <div class="toc-row"><span class="tno">06</span><span class="tt"><a href="#netskills">Operating skills — Junos and IOS, the basics</a></span><span class="leader"></span><span class="tp"><a href="#netskills"></a></span></div>
+  <div class="toc-row"><span class="tno">07</span><span class="tt"><a href="#network">Network consoles — console servers, ser2net, SSH</a></span><span class="leader"></span><span class="tp"><a href="#network"></a></span></div>
 
   <div class="toc-group">At the bench</div>
   <div class="toc-row"><span class="tno">E</span><span class="tt"><a href="#examples">Worked sessions</a></span><span class="leader"></span><span class="tp"><a href="#examples"></a></span></div>
@@ -79,14 +81,15 @@
   <div class="eyebrow">Chapter A · Before you start</div>
   <h2>The Tools at a Glance</h2>
   <div class="h2rule"></div>
-  <p class="lead">One server, thirty tools, as many open ports as the shack has cables.
-  The agent picks the tool; you say what you want in plain language. Nothing here is tied to
-  telecom: if a device has a serial port and speaks raw bytes, ANSI or VT100, the same tools
-  drive it.</p>
+  <p class="lead">One server, thirty tools, as many open ports as the shack has cables, and
+  as many network consoles as the bench has console servers. The agent picks the tool; you say
+  what you want in plain language. Nothing here is tied to telecom: if a device has a serial
+  port and speaks raw bytes, ANSI or VT100, the same tools drive it, whether the cable ends at
+  your computer or at a console server down the hall.</p>
   <table class="glance">
     <tr><th style="width:30%">Tools</th><th style="width:40%">What they do</th><th>When the agent reaches for them</th></tr>
     <tr><td class="strong mono">list_serial_ports · list_presets</td><td>Every port the computer sees, marked if open here; the usual settings for twelve device families.</td><td class="get">First, whenever a port or its settings are unknown</td></tr>
-    <tr><td class="strong mono">connect · reconnect_last · disconnect</td><td>Open a port by name with baud, framing, flow control, line ending and prompt, or from a preset. Several at once. Remembered across sessions.</td><td class="get">&ldquo;Connect the Kenwood as rig and the rotator on the other port&rdquo;</td></tr>
+    <tr><td class="strong mono">connect · reconnect_last · disconnect</td><td>Open a port by name with baud, framing, flow control, line ending and prompt, or from a preset; or a console over telnet, RFC 2217, SSH or raw TCP. Several at once. Remembered across sessions.</td><td class="get">&ldquo;Connect the Kenwood as rig and the rotator on the other port&rdquo;</td></tr>
     <tr><td class="strong mono">send_text · send_hex</td><td>Write an ASCII line or raw bytes. Writes only; never reads.</td><td class="get">Any command, login, bare return, CI-V frame</td></tr>
     <tr><td class="strong mono">read_until_prompt · read_available · query_text</td><td>Return buffered output up to a prompt (leaving the rest), or whatever has arrived, or clear-send-read in one.</td><td class="get">Every reply</td></tr>
     <tr><td class="strong mono">expect</td><td>A scripted list of send-and-wait steps in one call, with automatic replies to pagers.</td><td class="get">Logins, multi-step command sequences</td></tr>
@@ -280,7 +283,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   radio gear expect; name only what differs.</p>
   <table>
     <tr><th style="width:18%">Dialog field</th><th style="width:16%">Parameter</th><th style="width:12%">Default</th><th style="width:22%">Values</th><th>How to say it</th></tr>
-    <tr><td class="strong">Port</td><td class="mono">port</td><td class="mono">required</td><td class="mono">/dev/cu.usbserial-10<br>COM4 · /dev/ttyUSB0</td><td>&ldquo;the CP210x one&rdquo; works if you listed ports first</td></tr>
+    <tr><td class="strong">Port</td><td class="mono">port</td><td class="mono">required</td><td class="mono">/dev/cu.usbserial-10<br>COM4 · /dev/ttyUSB0<br>telnet://cs1:2003</td><td>&ldquo;the CP210x one&rdquo; works if you listed ports first; a network console is chapter 07</td></tr>
     <tr><td class="strong">Baud rate</td><td class="mono">baud</td><td class="mono">9600</td><td class="mono">1200 … 115200</td><td>&ldquo;at 38400&rdquo;</td></tr>
     <tr><td class="strong">Data bits</td><td class="mono">bytesize</td><td class="mono">8</td><td class="mono">5 · 6 · 7 · 8</td><td>&ldquo;7 data bits&rdquo;</td></tr>
     <tr><td class="strong">Parity</td><td class="mono">parity</td><td class="mono">N</td><td class="mono">N · E · O</td><td>&ldquo;even parity&rdquo;</td></tr>
@@ -444,6 +447,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong mono">send_break</td><td>Hold TX low for N ms</td><td>Enter ROMMON, interrupt a boot</td></tr>
     <tr><td class="strong mono">status</td><td>Shows CTS, DSR, CD, RI, DTR, RTS</td><td>&ldquo;Is the cable wired for flow control?&rdquo;</td></tr>
   </table>
+  <p>Over the network these depend on the transport: RFC 2217 carries all of them, telnet and
+  SSH carry BREAK only, raw TCP none (chapter 07).</p>
   <div class="callout warn">
     <div class="ct">A line can be a transmitter</div>
     <p>Many rig interfaces key PTT from RTS or DTR. Asking the agent to pulse a line on such a
@@ -460,11 +465,15 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   into one result. If a step's prompt never shows, the sequence stops there and says so, with
   whatever arrived.</p>
   <pre>expect(steps=[
-  {"send": "",             "expect": "login: "},
-  {"send": "admin",        "expect": "Password:"},
-  {"send": "&lt;password&gt;",   "expect": "&gt; "},
-  {"send": "show version", "expect": "&gt; ", "clear_first": true}
+  {"send": "",                    "expect": "login: "},
+  {"send": "admin",               "expect": "Password:"},
+  {"send_credential": "lab-ex2200", "expect": "&gt; "},
+  {"send": "show version",        "expect": "&gt; ", "clear_first": true}
 ])</pre>
+  <p>The password never appears in the chat. <span class="mono">send_credential</span> names a
+  password you stored yourself, in a terminal, with
+  <span class="mono">serial-console-mcp credential set lab-ex2200</span>; the server sends it and
+  reports only that it sent something hidden. Chapter 07 has the details.</p>
 
   <h3>Capture and transcript</h3>
   <p><i>&ldquo;Record this session&rdquo;</i> starts a capture: <b>raw</b> writes received bytes
@@ -645,6 +654,65 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   </div>
 </div>
 
+<!-- ============ 07 · NETWORK ============ -->
+<div class="chapter" id="network">
+  <div class="eyebrow">Chapter 07 · Network consoles</div>
+  <h2>Console Servers, ser2net and SSH</h2>
+  <div class="h2rule"></div>
+  <p class="lead">On a bench the console cable often ends at a console server or a small Linux
+  box, not at your computer. The same tools reach it over the network: once a network console is
+  open, prompts, <code>expect</code>, keys, the screen, capture, the transcript, read-only mode
+  and idle auto-close behave exactly as on a local port.</p>
+  <table>
+    <tr><th style="width:14%">Transport</th><th style="width:30%">For</th><th style="width:24%">BREAK · DTR/RTS · baud</th><th>How to say it</th></tr>
+    <tr><td class="strong mono">telnet</td><td>Reverse-telnet ports on Opengear, Cisco, Lantronix, Digi, Avocent; ser2net telnet ports</td><td>BREAK yes (IAC BRK) · no lines · server's baud</td><td>&ldquo;Telnet to cs1 port 2003&rdquo;</td></tr>
+    <tr><td class="strong mono">rfc2217</td><td>ser2net and device servers with RFC 2217 COM-port control</td><td>All three, set from here</td><td>&ldquo;Connect to rfc2217://ser2net:3001 at 115200&rdquo;</td></tr>
+    <tr><td class="strong mono">ssh</td><td>A console server's per-port SSH; a shell on a bench Pi or a BMC</td><td>BREAK yes (break request) · no lines · server's baud</td><td>&ldquo;SSH to bench-pi&rdquo; (a ~/.ssh/config alias)</td></tr>
+    <tr><td class="strong mono">tcp</td><td>Raw TCP: ser2net raw ports, simple device servers</td><td>Bytes only</td><td>&ldquo;Raw TCP to 10.0.0.5 port 4001&rdquo;</td></tr>
+  </table>
+  <p>Give the transport and host, or one address: <span class="mono">telnet://cs1:2003</span>,
+  <span class="mono">ssh://admin@bench-pi</span>, <span class="mono">tcp://10.0.0.5:4001</span>,
+  <span class="mono">rfc2217://ser2net:3001</span>. Telnet defaults to port 23, SSH to your
+  ~/.ssh/config or 22; raw TCP and RFC 2217 always need the port, because each serial line has
+  its own. Baud and framing only travel over RFC 2217; over telnet, SSH and raw TCP the console
+  server's port settings decide them, and the connect reply says so if you asked for a rate.
+  A tool that a transport cannot do, such as <code>set_lines</code> over telnet, answers with
+  what would work instead.</p>
+
+  <h3>SSH uses your own setup</h3>
+  <ul class="tight">
+    <li><b>~/.ssh/config is read.</b> Host aliases, HostName, User, Port, IdentityFile and
+        ProxyJump work the way they do for the <span class="mono">ssh</span> command.</li>
+    <li><b>Keys come from the SSH agent and your key files.</b> Nothing is copied anywhere.</li>
+    <li><b>The host key must already be known.</b> A host missing from
+        <span class="mono">~/.ssh/known_hosts</span>, or one whose key changed, is refused before
+        anything is sent. Accept a new key yourself, once, with <span class="mono">ssh host</span>
+        in a terminal after checking its fingerprint. Host key checking is never turned off.</li>
+  </ul>
+
+  <h3>Passwords by name, never in the chat</h3>
+  <p>Some console servers and devices take only a password. Store it once, in a terminal:</p>
+  <pre>serial-console-mcp credential set bench-opengear --username admin</pre>
+  <p>You are prompted for the password; it goes to <span class="mono">credentials.json</span>
+  beside the remembered connections, readable only by you (mode 600). Add
+  <span class="mono">--keychain</span> to keep it in the macOS Keychain instead. Then say
+  <i>&ldquo;telnet to cs1 port 2003 with the bench-opengear credential&rdquo;</i>: the server
+  answers the console server's <span class="mono">login:</span> and
+  <span class="mono">Password:</span> prompts right after connecting, or offers the password to
+  SSH. A device's own login further in uses <span class="mono">send_credential</span> in
+  <code>expect</code>. The agent never sees the password, and captures record only
+  <span class="mono">&lt;credential hidden&gt;</span>. <code>reconnect_last</code> remembers the
+  host, port, user name and credential name, nothing secret.</p>
+
+  <div class="callout">
+    <div class="ct">Fence the network in</div>
+    <p><code>SERIAL_CONSOLE_NETWORK_HOSTS</code> (the connector's &ldquo;network consoles
+    allowed&rdquo; setting) limits which hosts the server may reach, for example
+    <span class="mono">10.20.0.0/16, *.bench.lan</span>. Empty allows any host;
+    <span class="mono">none</span> turns network consoles off.</p>
+  </div>
+</div>
+
 <!-- ============ E · EXAMPLES ============ -->
 <div class="chapter" id="examples">
   <div class="eyebrow">Chapter E · At the bench</div>
@@ -748,6 +816,11 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong">Wrong device answered</td><td>Several ports open; the command went to the current one.</td><td class="mono">&ldquo;Send that to the rotator&rdquo; · &ldquo;what's the status?&rdquo;</td></tr>
     <tr><td class="strong">Write failed: Write timeout</td><td>RTS/CTS is on and the cable doesn't carry CTS.</td><td class="mono">&ldquo;Reconnect without hardware flow control&rdquo;</td></tr>
     <tr><td class="strong">Background reader has stopped</td><td>Adapter unplugged or port taken by another program mid-session.</td><td class="mono">&ldquo;Disconnect and reconnect&rdquo;</td></tr>
+    <tr><td class="strong">Refused: nothing is listening there</td><td>Wrong TCP port for that serial line, or the port is disabled on the console server.</td><td class="mono">Check the console server's port map, then &ldquo;telnet to port 2005 instead&rdquo;</td></tr>
+    <tr><td class="strong">SSH host key could not be verified</td><td>First connection to this host, or its key changed.</td><td class="mono">Check the fingerprint, run <span class="mono">ssh host</span> once in a terminal, then retry</td></tr>
+    <tr><td class="strong">SSH login refused</td><td>No key in the agent or ~/.ssh is accepted, or the device takes only a password.</td><td class="mono">Add your key, or <span class="mono">credential set NAME</span> and &ldquo;use the NAME credential&rdquo;</td></tr>
+    <tr><td class="strong">No stored credential named …</td><td>The password was never stored, or under another name.</td><td class="mono"><span class="mono">serial-console-mcp credential set NAME</span> in a terminal</td></tr>
+    <tr><td class="strong">The telnet/ssh connection has stopped</td><td>The console server's idle timeout, another user taking the port, a reboot or a network drop.</td><td class="mono">&ldquo;Reconnect to the last one&rdquo;</td></tr>
     <tr><td class="strong">Claude says it has no serial tools</td><td>Claude Desktop wasn't fully quit after install, or the config entry is missing.</td><td class="mono">Quit with ⌘Q / tray Quit, reopen, new chat</td></tr>
   </table>
   <div class="callout">
@@ -770,7 +843,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><th style="width:22%">Tool</th><th style="width:48%">Parameters</th><th>Returns</th></tr>
     <tr><td class="strong mono">list_serial_ports</td><td>none</td><td>Ports with description, hardware id, open-here marker</td></tr>
     <tr><td class="strong mono">list_presets</td><td>none</td><td>Each preset's settings and notes</td></tr>
-    <tr><td class="strong mono">connect</td><td class="mono">port · preset · name · baud [9600] · bytesize [8] · parity N|E|O [N] · stopbits [1] · rtscts [off] · xonxoff [off] · line_ending [CR] · prompt · prompt_regex · terminal dumb|ansi|vt100|xterm [dumb] · cols [80] · rows [24]</td><td>Settings echoed back, preset notes, other open ports</td></tr>
+    <tr><td class="strong mono">connect</td><td class="mono">port · preset · name · baud [9600] · bytesize [8] · parity N|E|O [N] · stopbits [1] · rtscts [off] · xonxoff [off] · line_ending [CR] · prompt · prompt_regex · terminal dumb|ansi|vt100|xterm [dumb] · cols [80] · rows [24] · transport serial|telnet|ssh|tcp|rfc2217 [serial] · host · tcp_port · username · credential (a name)</td><td>Settings echoed back, preset notes, other open ports</td></tr>
     <tr><td class="strong mono">reconnect_last</td><td class="mono">name [most recent]</td><td>Same as connect, from the remembered settings</td></tr>
     <tr><td class="strong mono">disconnect</td><td class="mono">connection · all_connections [false]</td><td>Confirmation; always releases the port</td></tr>
     <tr><td class="strong mono">send_text</td><td class="mono">data · line_ending [connection's] · clear_buffer_first [false]</td><td>Byte count sent</td></tr>
@@ -778,14 +851,14 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong mono">read_until_prompt</td><td class="mono">prompt [connection's, else ends-with #&gt;$%] · timeout [10 s] · regex · auto_reply</td><td>Output through the prompt; on timeout, whatever arrived</td></tr>
     <tr><td class="strong mono">read_available</td><td class="mono">read_timeout [1 s]</td><td>Bytes as text and hex, after the line goes quiet</td></tr>
     <tr><td class="strong mono">query_text</td><td class="mono">data · line_ending · prompt [connection's; "" = idle] · read_timeout [5 s]</td><td>The reply</td></tr>
-    <tr><td class="strong mono">expect</td><td class="mono">steps [{send, send_hex, line_ending, expect, regex, timeout, clear_first}] · auto_reply · stop_on_timeout [true]</td><td>Each step's result</td></tr>
+    <tr><td class="strong mono">expect</td><td class="mono">steps [{send, send_hex, send_credential, line_ending, expect, regex, timeout, clear_first}] · auto_reply · stop_on_timeout [true]</td><td>Each step's result</td></tr>
     <tr><td class="strong mono">clear_buffer</td><td>none</td><td>Bytes discarded</td></tr>
     <tr><td class="strong mono">send_keys</td><td class="mono">keys [ctrl-c, esc, tab, enter, up, f1, "x", text:…]</td><td>Confirmation of what was pressed</td></tr>
     <tr><td class="strong mono">screen</td><td class="mono">reset [false]</td><td>The xterm/vt100 grid as text, with cursor position</td></tr>
     <tr><td class="strong mono">status</td><td>none</td><td>Every open port: settings, reader, buffer, lines, capture; or what is remembered</td></tr>
     <tr><td class="strong mono">set_lines</td><td class="mono">dtr · rts</td><td>Resulting DTR/RTS</td></tr>
     <tr><td class="strong mono">pulse_line</td><td class="mono">line DTR|RTS · ms [100] · level [true]</td><td>Confirmation, line restored</td></tr>
-    <tr><td class="strong mono">send_break</td><td class="mono">ms [250]</td><td>Confirmation</td></tr>
+    <tr><td class="strong mono">send_break</td><td class="mono">ms [250]</td><td>Confirmation; over telnet the console server sets the length</td></tr>
     <tr><td class="strong mono">capture_start</td><td class="mono">path [auto] · format raw|annotated [raw]</td><td>The file being written</td></tr>
     <tr><td class="strong mono">capture_stop</td><td>none</td><td>File and bytes written</td></tr>
     <tr><td class="strong mono">get_transcript</td><td class="mono">last_bytes [4000]</td><td>Tail of everything received (rolling 256 KB); also the resource <span class="mono">serial://transcript/{name}</span></td></tr>
@@ -806,6 +879,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <li><b>Write timeout</b> is two seconds; <b>reader poll</b> is a tenth of a second; <b>idle settle</b> for prompt-less reads is 150 ms; the <b>receive buffer</b> holds 4 MB per port and the <b>transcript</b> 256 KB.</li>
     <li><b>Remembered connections</b> live in <span class="mono">last_connection.json</span> under <span class="mono">~/Library/Application Support/serial-console-mcp/</span> (Mac), <span class="mono">%APPDATA%\serial-console-mcp\</span> (Windows), <span class="mono">~/.config/serial-console-mcp/</span> (Linux); auto-named captures go in a <span class="mono">captures</span> folder beside it.</li>
     <li><b>Terminal modes</b> only change what the read tools return; the capture file and the screen model always get the raw bytes. The escape stripper is chunk-safe: a sequence split across two reads is held until complete.</li>
+    <li><b>Network consoles</b> look like serial ports to everything above. Telnet negotiates only BINARY, SGA, ECHO, terminal type and window size and refuses the rest; a CR goes out as CR NUL unless binary mode was agreed.</li>
+    <li><b>Named credentials</b> live in <span class="mono">credentials.json</span> beside the remembered connections (mode 600, refused if others can read it), in the keyring package's store, or in the macOS Keychain under service <span class="mono">serial-console-mcp</span>.</li>
     <li><b>The operating skill</b> in <span class="mono">skills/serial-console/SKILL.md</span> carries this guide's rules for the agent.</li>
   </ul>
 </div>

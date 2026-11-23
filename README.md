@@ -35,6 +35,10 @@ with a serial port:
   IoT gateways, alarm and access-control panels, UPS and PDU menus, lab
   instruments, industrial controllers, Linux and BIOS consoles and
   microcontrollers work too.
+- **Consoles on the network.** A console server's reverse-telnet or per-port
+  SSH (Opengear, Cisco, Lantronix, Digi, Avocent), ser2net and RFC 2217 device
+  servers, raw TCP, and SSH shells on a bench computer, with the same tools as a
+  local cable. See [Network consoles](#network-consoles).
 
 You say what you want in plain language. The assistant drives the console
 through this server, Claude Desktop asks you to approve each step, and bundled
@@ -79,20 +83,20 @@ interactive CLIs properly.
 | --- | --- |
 | `list_serial_ports` | Enumerate ports with description and USB hardware id; marks ones open here |
 | `list_presets` | Usual settings per device family: Cisco/Juniper/Linux consoles, full-screen consoles (BIOS, BMC, menus), Kenwood/Elecraft/Yaesu CAT, Icom and Xiegu CI-V, rotators, Arduino, NMEA GPS |
-| `connect` / `reconnect_last` / `disconnect` | Open a port by name. Defaults 9600 8N1, no flow control; baud, data bits, parity, stop bits, RTS/CTS, XON/XOFF, line ending and prompt are all settable, or loaded from a preset. Several ports at once |
+| `connect` / `reconnect_last` / `disconnect` | Open a port by name. Defaults 9600 8N1, no flow control; baud, data bits, parity, stop bits, RTS/CTS, XON/XOFF, line ending and prompt are all settable, or loaded from a preset. Or a network console: `transport` telnet, ssh, tcp or rfc2217 with `host` and `tcp_port`. Several at once |
 | `send_keys` / `screen` | Press Ctrl-C, Esc, Tab, arrows, F-keys by name; view the VT100/xterm screen of a full-screen console (BIOS, BMC, menu switches, vi) |
 | `send_text` / `send_hex` | Write an ASCII line (CR / LF / CRLF / none) or raw hex bytes. Write-only |
 | `read_until_prompt` | Return buffered output up to a literal or regex prompt, leaving the rest; `auto_reply` pages through `--More--` |
 | `read_available` | Return whatever has arrived, as text and hex |
 | `query_text` | Clear, send, then read until the prompt or until the line goes idle |
-| `expect` | A scripted list of send-and-wait steps in one call: logins, command sequences |
-| `set_lines` / `pulse_line` / `send_break` | Drive DTR and RTS (PTT, Arduino reset), send BREAK |
+| `expect` | A scripted list of send-and-wait steps in one call: logins (passwords by credential name with `send_credential`), command sequences |
+| `set_lines` / `pulse_line` / `send_break` | Drive DTR and RTS (PTT, Arduino reset), send BREAK. Over the network: RFC 2217 carries all three, telnet and SSH BREAK only, raw TCP none; the tools say so |
 | `capture_start` / `capture_stop` / `get_transcript` | Log a session to a file (raw or timestamped TX/RX); re-read the rolling transcript |
 | `port_in_use_by` / `detect_baud` | Which program holds a port; which baud rate produces readable text |
 | `cat_build` / `cat_parse` | Kenwood, Elecraft and Yaesu `;` commands: build a frequency set, decode ID, FA, MD, IF and error replies |
 | `civ_build` / `civ_parse` / `civ_freq` | Icom CI-V frames: build, decode (echo vs reply, BCD frequency, mode, PTT), convert |
 | `rotator_build` / `rotator_parse` | GS-232 rotator commands (read, move, stop, speed) and position replies |
-| `clear_buffer` / `status` | Housekeeping; status shows every open port with control-line states |
+| `clear_buffer` / `status` | Housekeeping; status shows every open port and network console with control-line states |
 
 Ports are opened by name ("rig", "rotator"); tools default to the most recently
 used one. Each connection has a terminal mode: `dumb` (raw bytes, the default),
@@ -102,6 +106,54 @@ spaces and backspaces; used by the console presets), or `xterm`/`vt100` (a real 
 with `screen`; needs `pip install 'serial-console-mcp[screen]'`, included in
 the desktop connector). The receive buffer is capped at 4 MB per port; if a device streams for
 hours unread, the oldest bytes are dropped and `status` says how many.
+
+### Network consoles
+
+Once a network console is open, every tool above works on it the same way:
+prompts, `expect`, `send_keys` and `screen`, capture, the transcript,
+read-only mode, idle auto-close and `status`.
+
+| Transport | For | BREAK, DTR/RTS, baud |
+| --- | --- | --- |
+| `telnet` | Reverse-telnet ports on console servers (Opengear, Cisco, Lantronix, Digi, Avocent), ser2net telnet ports | BREAK (IAC BRK); the console server's port settings decide the rest |
+| `rfc2217` | ser2net and device servers with RFC 2217 COM-port control | All of them, set from here |
+| `ssh` | A console server's per-port SSH, or a shell on a bench computer, BMC or router | BREAK (SSH break request) |
+| `tcp` | Raw TCP: ser2net raw ports, simple device servers | Bytes only |
+
+Give `transport` and `host` (plus `tcp_port`), or one address as `port`:
+`telnet://cs1:2003`, `ssh://admin@bench-pi`, `tcp://10.0.0.5:4001`,
+`rfc2217://ser2net:3001`. Telnet defaults to port 23 and SSH to your
+`~/.ssh/config` or 22; raw TCP and RFC 2217 need the port.
+
+**Credentials never go through the chat.**
+
+- **SSH** reads `~/.ssh/config`, so Host aliases, `User`, `Port`,
+  `IdentityFile` and `ProxyJump` work. Keys come from the SSH agent and your
+  key files. The host key must already be in `~/.ssh/known_hosts`: an unknown
+  or changed key is refused before anything is sent, and host key checking is
+  never turned off. To trust a new device, run `ssh host` once in a terminal and
+  check the fingerprint.
+- **Passwords** (a console server's telnet login, a password-only SSH device, a
+  device's own login) are stored by you, in a terminal, under a name:
+
+  ```bash
+  serial-console-mcp credential set bench-opengear --username admin
+  ```
+
+  You are prompted for the password. It goes to `credentials.json` in the
+  settings folder below, with mode 600 (refused if others can read it); add
+  `--keychain` to keep it in the macOS Keychain or, with the `keyring` package,
+  your system's keyring instead. Then the assistant passes `credential="bench-opengear"`
+  to `connect`, which answers the console server's `login:` and `Password:`
+  prompts or offers the password to SSH, or uses `send_credential` in an
+  `expect` step for a device's own login. The password is never shown, and
+  annotated captures record `<credential hidden>`. `credential list` shows the
+  names; `credential remove NAME` deletes one.
+- `reconnect_last` and named connections remember the transport, host, port,
+  user name and credential name, never a secret.
+
+SSH needs the `ssh` extra (`pip install 'serial-console-mcp[ssh]'`); the
+desktop connector includes it. Telnet, RFC 2217 and raw TCP need nothing extra.
 
 ### Operating skills
 
@@ -123,6 +175,8 @@ desktop app, upload them as described under
 | `SERIAL_CONSOLE_READ_ONLY=1` | Refuse writes except read-style commands (`show`, `ID;`, CI-V reads) and refuse control-line changes |
 | `SERIAL_CONSOLE_ALLOW=<regex>` | Override the read-only allowlist |
 | `SERIAL_CONSOLE_IDLE_MINUTES=15` | Auto-close a port idle that long (default: never) |
+| `SERIAL_CONSOLE_NETWORK_HOSTS=10.20.0.0/16,*.bench.lan` | Hosts network consoles may reach: names with `*` wildcards and address ranges. Empty (the default) allows any host; `none` turns network consoles off |
+| `SERIAL_CONSOLE_CREDENTIALS=/path/file.json` | Use this credentials file instead of `credentials.json` in the settings folder |
 
 Set them in the server's entry in `claude_desktop_config.json` under `"env"`.
 
@@ -135,7 +189,8 @@ Set them in the server's entry in `claude_desktop_config.json` under `"env"`.
    **Extensions**, and drag the file onto that page (or use **Advanced settings →
    Install extension**). It then shows as a connector under **Settings →
    Customize → Connectors**. A short settings form offers
-   read-only mode and an idle timeout; both are off unless you turn them on.
+   read-only mode, an idle timeout and a list of network hosts the server may
+   reach; all are off or open unless you set them.
 3. In a new chat, type: **"What serial ports do you see?"** If Claude lists your
    ports, you're done.
 
@@ -187,8 +242,8 @@ it. Any other MCP client can launch the same command over stdio.
 ```bash
 git clone https://github.com/sbrunner-atx/serial-console-mcp.git
 cd serial-console-mcp
-uv sync                       # or: python3 -m venv .venv && . .venv/bin/activate && pip install -e . pytest
-uv run pytest                 # fake serial port, no hardware needed
+uv sync --extra screen --extra ssh  # or: pip install -e '.[screen,ssh]' pytest
+uv run pytest                 # fake serial port and local telnet/SSH/TCP/RFC 2217 servers, no hardware
 uv run serial-console-mcp configure --command "$PWD/.venv/bin/serial-console-mcp"
 ```
 
@@ -205,7 +260,7 @@ Plain-English requests work. Some examples:
 - "Connect to the console on /dev/cu.usbserial-10 at 9600 baud."
 - "Connect to /dev/cu.BLTH at 38400, 8 data bits, no parity, 1 stop bit, XON/XOFF flow control."
 - "Connect to the Kenwood with the kenwood-cat preset and call it rig; connect the rotator on the other port."
-- "Log in as admin and run show version" (one `expect` call: return, login, password, command).
+- "Log in as admin with the lab-switch credential and run show version" (one `expect` call: return, login, `send_credential`, command).
 - "What baud rate is this thing?" (`detect_baud`).
 - "Key the rig for two seconds" (`pulse_line("RTS", 2000)`, after you confirm).
 - "Ask the IC-7300 for its frequency" (`civ_build`, `send_hex`, `read_available`, `civ_parse`).
@@ -215,6 +270,9 @@ Plain-English requests work. Some examples:
 - "Hit Ctrl-C, that ping is still running." (`send_keys`)
 - "Open the BIOS console at 115200 and show me the screen; go down two and press Enter." (`screen-console` preset, `screen`, `send_keys`)
 - "Reconnect to the same port as last time." (it remembers)
+- "Telnet to the console server cs1, port 2003, with the bench-opengear credential."
+- "SSH to bench-pi and run dmesg." (a `~/.ssh/config` alias)
+- "Connect to rfc2217://ser2net:3001 at 115200 and reset the board with DTR."
 - "Send a return, then read until the login prompt."
 - "Log in as admin and run `show interfaces terse`, then show me all of it."
 - "Just read whatever the device is printing right now."
@@ -240,6 +298,17 @@ Icom radio (CI-V), tell Claude — it can send the hex commands those radios exp
 **Claude says it can't access serial ports at all.**
 - Make sure you fully quit and reopened Claude Desktop after installing.
 - Start a brand-new chat and ask "What serial ports do you see?" again.
+
+**A network console won't connect.**
+- "Refused: nothing is listening there": wrong TCP port for that serial line,
+  or the port is disabled on the console server. Check its port map.
+- "Host key could not be verified": run `ssh host` once in a terminal, check
+  the fingerprint, accept it, then try again.
+- "SSH login was refused": add your public key to the device, or store its
+  password with `serial-console-mcp credential set NAME` and ask Claude to use
+  that credential.
+- A console server usually lets one session use a port at a time; close the
+  other session.
 
 **It connected but a command gets no reply.**
 - Almost always the **baud rate** is wrong, or the **line ending** is wrong for your

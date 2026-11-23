@@ -1001,7 +1001,11 @@ def _console_login(conn: Connection, username: str, cred) -> str:
     sent = f"sent {who}password from credential {cred.name!r} (hidden)" if sent_pw else (
         f"sent {who}no password")
     tail = f"\nLogin dialogue:\n{shown[-600:]}" if shown else ""
-    return f"Console login: {result}; {sent}.{tail}"
+    with conn.lock:
+        waiting = len(conn.rx)
+    after = (f"\n{waiting} bytes after the login are buffered (banner, prompt): read them with "
+             f"read_until_prompt before the first command." if waiting and sent_pw else "")
+    return f"Console login: {result}; {sent}.{tail}{after}"
 
 
 @mcp.tool()

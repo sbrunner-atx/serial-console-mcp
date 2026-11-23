@@ -7,7 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Network consoles.** `connect` takes `transport` (`serial` by default,
+  `telnet`, `ssh`, `tcp`, `rfc2217`) with `host` and `tcp_port`, or a URL such
+  as `telnet://cs1:2003` or `ssh://admin@bench-pi`. Every tool works the same
+  over every transport: the background reader, `read_until_prompt`, `expect`,
+  `send_keys` and `screen`, capture, the transcript, read-only mode, idle
+  auto-close and `status`.
+  - **telnet**: console servers' reverse-telnet ports (Opengear, Cisco,
+    Lantronix, Digi, Avocent) and ser2net. Negotiates BINARY, SGA, ECHO,
+    terminal type and window size and refuses other options; IAC is escaped
+    both ways and a CR is sent as CR NUL in NVT mode. `send_break` sends
+    IAC BRK.
+  - **rfc2217**: RFC 2217 COM-port control through pyserial, so baud,
+    framing, DTR/RTS and BREAK reach the remote serial port.
+  - **ssh**: an interactive shell or a console server's per-port SSH, through
+    asyncssh (new `ssh` extra, included in the desktop connector). Uses
+    `~/.ssh/config` (Host aliases, User, Port, IdentityFile, ProxyJump), the
+    SSH agent and key files. The host key must already be in `known_hosts`;
+    unknown or changed keys are refused and host key checking is never turned
+    off. `send_break` sends an SSH break request.
+  - **tcp**: raw bytes, for ser2net raw ports and simple device servers.
+  - `set_lines`, `pulse_line` and `send_break` say what a transport cannot do
+    and what would work instead; `status` says which lines a transport has.
+- **Named credentials.** Passwords never go through the chat or a tool
+  argument. `serial-console-mcp credential set NAME [--username USER]
+  [--keychain]` stores one from a terminal prompt in `credentials.json` (mode
+  600, refused if others can read it), the macOS Keychain or the `keyring`
+  package's store. `connect(credential=NAME)` answers a console server's
+  `login:`/`Password:` prompts or offers the password to SSH; the new `expect`
+  step `send_credential` sends a device's own password. Credentials are hidden
+  from tool results and annotated captures. `credential list` and
+  `credential remove` manage them.
+- `reconnect_last` and named connections remember network targets (transport,
+  host, port, user name, credential name), never a secret.
+- `SERIAL_CONSOLE_NETWORK_HOSTS` (the connector's "Network consoles allowed"
+  setting) limits which hosts network consoles may reach; `none` turns them
+  off. `SERIAL_CONSOLE_CREDENTIALS` points at another credentials file.
+- Tests run local telnet, raw TCP, RFC 2217 and SSH servers, so the network
+  paths are covered in CI without hardware.
+- Field Guide chapter 07, "Console Servers, ser2net and SSH"; the
+  `serial-console` skill covers network consoles and passwords by name.
+
 ### Changed
+- The `expect` login example in the tool description, README and Field Guide
+  sends the password with `send_credential` instead of typing it in the chat.
 - **License.** From this release on, serial-console-mcp is licensed under the
   [PolyForm Noncommercial License 1.0.0](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/LICENSE):
   free for personal use, hobby projects, amateur radio, education, and nonprofit

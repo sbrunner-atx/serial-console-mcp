@@ -329,6 +329,7 @@ def test_telnet_console_login_with_credential(tmp_path):
         out = _ok(m.connect(transport="telnet", host="127.0.0.1", tcp_port=srv.port,
                             credential="bench-cs", prompt="switch> ", name="cs"))
         assert "Console login: logged in" in out, out
+        assert "after the login are buffered" in out
         assert "pässw0rd" not in out and "(hidden)" in out
         assert srv.login_attempts == [(b"admin", "pässw0rd".encode())]
         assert "Welcome" in m.read_until_prompt()

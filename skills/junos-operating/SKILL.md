@@ -47,7 +47,8 @@ shell, not configuration mode, when there is no `[edit]` line above it.
   commands there (`rm`, `vi`, `reboot`, `newfs`) bypass every Junos safeguard.
   Run none of them without the user's explicit words.
 - A non-root user who needs the shell uses `start shell user root`, which asks
-  for the root password: ask the user, never guess.
+  for the root password: never guess and never ask for it in the chat; send it with
+  `expect` `send_credential` from a credential the user stored (see `serial-console`).
 - csh echoes `exit` twice when a nested shell closes; that is normal.
 
 ## Into configuration mode, and out

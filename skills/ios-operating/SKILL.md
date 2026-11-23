@@ -30,7 +30,8 @@ prompt tells you the mode; never assume it.
 
 ## Moving between modes
 
-- User to privileged: `enable`. Expect `Password:` (ask the user) or `#`.
+- User to privileged: `enable`. Expect `Password:` or `#`; answer the password with
+  `expect` `send_credential` from a credential the user stored, never typed in the chat.
 - Privileged to configuration: `configure terminal`. Expect `(config)#`.
 - Into a section: `interface GigabitEthernet1/0/1`, `line vty 0 4`, `vlan 10`.
 - One level up: `exit`. All the way to `#`: `end` (or Ctrl-Z).

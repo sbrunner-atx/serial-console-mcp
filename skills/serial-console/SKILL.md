@@ -5,10 +5,12 @@ description: >
   network craft/console ports (Juniper, Cisco, Linux), text CAT radios
   (Kenwood, Elecraft, Yaesu), Icom CI-V, rotators, microcontrollers, IoT
   gateways, alarm and control panels, instruments, and anything else with a
-  serial port, whether it speaks raw bytes, ANSI or a VT100 screen. Use
+  serial port, whether it speaks raw bytes, ANSI or a VT100 screen, on a local
+  cable or over the network (console servers, ser2net, RFC 2217, SSH). Use
   whenever the user wants to connect to, read from, or command anything on a
-  serial cable: picking settings, sending with the right line ending, reading
-  until the prompt instead of guessing, and handing the port back cleanly.
+  serial cable or a network console: picking settings, sending with the right
+  line ending, reading until the prompt instead of guessing, logging in without
+  ever handling a password, and handing the port back cleanly.
 ---
 
 # Operating a serial console through serial-console-mcp
@@ -29,7 +31,7 @@ between calls; `get_transcript` re-reads what earlier calls already returned.
 | Find and open | `list_serial_ports`, `list_presets`, `connect`, `reconnect_last`, `disconnect`, `status` |
 | Send | `send_text`, `send_hex` |
 | Read | `read_until_prompt`, `read_available`, `query_text`, `clear_buffer` |
-| Script | `expect` (steps + `auto_reply`) |
+| Script | `expect` (steps + `auto_reply`; `send_credential` for passwords) |
 | Keys and screens | `send_keys` (Ctrl-C, Esc, Tab, arrows, F-keys), `screen` (xterm/vt100 grid) |
 | Lines | `set_lines`, `pulse_line`, `send_break` |
 | Record | `capture_start`, `capture_stop`, `get_transcript` (also resource `serial://transcript/{name}`) |
@@ -44,7 +46,8 @@ For a Juniper, also load `junos-operating`; for a Cisco or IOS-like CLI,
 ## The six rules
 
 1. **Sending never reads.** After `send_text` or `send_hex`, call a read tool.
-   Log in with `expect`: send, wait for `Password:`, send, wait for the shell.
+   Log in with `expect`: send, wait for `Password:`, `send_credential`, wait for
+   the shell.
 2. **Name the prompt with its trailing space.** `"# "`, `"> "`, `"login: "`.
    The match runs over everything received, including the echo of your own
    command, so a bare `#` matches inside a banner. Hostname prompts change after
@@ -63,7 +66,47 @@ For a Juniper, also load `junos-operating`; for a Cisco or IOS-like CLI,
    the reverse. Nothing at all: send a bare return to draw a prompt, then check
    the cable and `port_in_use_by`.
 6. **Disconnect before handing the port to anything else.** One process per
-   port. Also `capture_stop` before you disconnect if the user wants the file.
+   port, and one session per console server port. Also `capture_stop` before
+   you disconnect if the user wants the file.
+
+## Network consoles
+
+`connect` reaches consoles over the network with `transport` and `host`
+(plus `tcp_port`), or one URL as `port`:
+
+| Transport | Use it for | Lines |
+| --- | --- | --- |
+| `telnet` | Console server reverse-telnet ports (Opengear, Cisco 2000+line, Lantronix), ser2net telnet | BREAK only |
+| `rfc2217` | ser2net or a device server with RFC 2217: baud, DTR/RTS and BREAK reach the remote port | All |
+| `ssh` | A console server's per-port SSH, a shell on a bench Pi, BMC or router; `~/.ssh/config` aliases work | BREAK only |
+| `tcp` | ser2net raw ports and simple device servers | None |
+
+- Once open, everything works as on a local port. Baud and framing apply only
+  to serial and `rfc2217`; over telnet, ssh and tcp the console server decides.
+- If a tool says a transport cannot do something (`set_lines` over telnet),
+  tell the user what would work: `rfc2217`, or the console server's port menu.
+- A dropped network console says the connection stopped. Run `disconnect`, then
+  `reconnect_last`. A console server port usually takes one session at a time.
+
+## Passwords: by name only
+
+Never ask for a password in the chat, never put one in `send`, `send_text`,
+`query_text` or a URL, and never repeat one the user pastes. Passwords live in
+named credentials that the user stores themselves, in a terminal:
+`serial-console-mcp credential set NAME --username USER`. Then:
+
+- `connect(..., credential="NAME")` answers a console server's `login:` and
+  `Password:` prompts right after connecting, or offers the password to SSH.
+- `expect([... {"send_credential": "NAME", "expect": "> "}])` sends a device's
+  own password at its prompt.
+- If the result says no credential has that name, give the user the command
+  above to run and wait for them.
+
+SSH keys and trust come from the user's own setup: the SSH agent, key files
+and `~/.ssh/config`. If the host key could not be verified against
+`known_hosts`, stop and tell the user to check the fingerprint and accept it
+themselves (`ssh host` once in a terminal). Never suggest turning host key
+checking off.
 
 ## Choosing settings
 
