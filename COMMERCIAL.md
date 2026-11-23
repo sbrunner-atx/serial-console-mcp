@@ -57,10 +57,6 @@ If you are not sure, assume a license is needed and ask. Most questions take one
 ## How to buy
 
 Commercial licenses, device support, custom work and support plans are sold through
-**Zylergy**: [ZYLERGY_URL](ZYLERGY_URL).
-<!-- TODO before release: replace both instances of ZYLERGY_URL above with the Zylergy page for this product. -->
-
-Large engagements, such as multi-site rollouts or extensive custom development, go through
-[Westlake Professionals](https://westlakeprofessionals.com).
+**Westlake Professionals**: [https://westlakeprofessionals.com](https://westlakeprofessionals.com).
 
 73 de AE5VG
