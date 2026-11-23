@@ -3,7 +3,8 @@ name = "serial-console-mcp"
 version = "0.3.3"
 description = "AI for the configuration of telecommunication equipment over its serial console: Juniper and Cisco routers and switches, Icom CI-V and Kenwood, Yaesu and Elecraft CAT transceivers, and GS-232 antenna rotators, plus any other serial device in raw, ANSI or VT100 mode: IoT gateways, alarm and control panels, instruments. An MCP server for Claude and other AI assistants."
 readme = "README.md"
-license = { text = "MIT" }
+license = "PolyForm-Noncommercial-1.0.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
     { name = "Stefan Brunner (AE5VG)", email = "me@stefanbrunner.org" },
@@ -48,7 +49,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "Intended Audience :: Telecommunications Industry",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
@@ -94,7 +94,7 @@ Changelog = "https://github.com/sbrunner-atx/serial-console-mcp/blob/main/CHANGE
 "Field Guide" = "https://github.com/sbrunner-atx/serial-console-mcp/blob/main/docs/serial-console-mcp%20Field%20Guide.pdf"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]

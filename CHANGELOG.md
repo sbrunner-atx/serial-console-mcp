@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **License.** From this release on, serial-console-mcp is licensed under the
+  [PolyForm Noncommercial License 1.0.0](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/LICENSE):
+  free for personal use, hobby projects, amateur radio, education, and nonprofit
+  and public organizations. Use by or for a business, including internal use,
+  needs a commercial license; see
+  [COMMERCIAL.md](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/COMMERCIAL.md).
+  Versions up to and including 0.3.3 were released under the MIT License and
+  remain under the MIT License.
+- Package metadata (`pyproject.toml`, `manifest.json`), README and Field Guide
+  updated to match. The Field Guide has a new closing chapter, I, on commercial
+  use and support.
+
 ## [0.3.3] - 2026-11-12
 
 Package page only; no code or behavior changes.

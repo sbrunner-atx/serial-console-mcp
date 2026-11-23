@@ -8,7 +8,14 @@ Project page: [ae5vg.com/products/serial-console-mcp](https://ae5vg.com/products
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/serial-console-mcp?label=pypi&cacheSeconds=3600)](https://pypi.org/project/serial-console-mcp/)
-&nbsp;MIT licensed &nbsp;·&nbsp; Python 3.10+ &nbsp;·&nbsp; **status: 0.3.2, verified live on a Juniper EX2200 console**
+[![license: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/LICENSE)
+&nbsp;Python 3.10+ &nbsp;·&nbsp; **status: 0.3.2, verified live on a Juniper EX2200 console**
+
+> **Free for hobbyists. Commercial use needs a license.**
+> Personal use, amateur radio, education and nonprofit organizations are free.
+> Any use by or for a business, including internal use, needs a commercial
+> license. Licenses, support for more devices, custom skills and support plans:
+> see [COMMERCIAL.md](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/COMMERCIAL.md).
 
 serial-console-mcp connects an AI assistant such as Claude to the serial console
 of the equipment that runs networks and radio stations, and of anything else
@@ -250,6 +257,18 @@ real terminal handy for anything you would not want an assistant to type.
 
 ## License
 
-MIT. See [LICENSE](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/LICENSE).
+[PolyForm Noncommercial License 1.0.0](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/LICENSE),
+starting with the first release after 0.3.3.
+
+- **Free** for personal use, hobby projects, amateur radio, education, and
+  charitable, public research, public safety and government organizations.
+- **Commercial license required** for any use by or for a business, including
+  internal use by employees and work for clients.
+- **Paid offers:** an annual commercial license per company, support for
+  additional devices and protocols, custom skills and integrations, and support
+  plans. See [COMMERCIAL.md](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/COMMERCIAL.md).
+
+Versions up to and including 0.3.3 were released under the MIT License and
+remain under it.
 
 73!
