@@ -14,19 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   over every transport: the background reader, `read_until_prompt`, `expect`,
   `send_keys` and `screen`, capture, the transcript, read-only mode, idle
   auto-close and `status`.
-  - **telnet**: console servers' reverse-telnet ports (Opengear, Cisco,
-    Lantronix, Digi, Avocent) and ser2net. Negotiates BINARY, SGA, ECHO,
+  - **telnet**: a device's own telnet (a router's or switch's management
+    address, a Linux box), console servers' reverse-telnet ports (Opengear,
+    Cisco, Lantronix, Digi, Avocent) and ser2net. Negotiates BINARY, SGA, ECHO,
     terminal type and window size and refuses other options; IAC is escaped
     both ways and a CR is sent as CR NUL in NVT mode. `send_break` sends
     IAC BRK.
   - **rfc2217**: RFC 2217 COM-port control through pyserial, so baud,
     framing, DTR/RTS and BREAK reach the remote serial port.
-  - **ssh**: an interactive shell or a console server's per-port SSH, through
-    asyncssh (new `ssh` extra, included in the desktop connector). Uses
-    `~/.ssh/config` (Host aliases, User, Port, IdentityFile, ProxyJump), the
-    SSH agent and key files. The host key must already be in `known_hosts`;
-    unknown or changed keys are refused and host key checking is never turned
-    off. `send_break` sends an SSH break request.
+  - **ssh**: a device's own SSH (router, switch, BMC, a bench Pi) or a
+    console server's per-port SSH, through asyncssh (new `ssh` extra,
+    included in the desktop connector). Uses `~/.ssh/config` (Host aliases,
+    User, Port, IdentityFile, ProxyJump), the SSH agent and key files, or a
+    password. The host key must be in `known_hosts`. A changed key is always
+    refused, and host key checking is never turned off. `send_break` sends an
+    SSH break request.
   - **tcp**: raw bytes, for ser2net raw ports and simple device servers.
   - `set_lines`, `pulse_line` and `send_break` say what a transport cannot do
     and what would work instead; `status` says which lines a transport has.
@@ -39,6 +41,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   step `send_credential` sends a device's own password. Credentials are hidden
   from tool results and annotated captures. `credential list` and
   `credential remove` manage them.
+- **One-off user name and password logins: `connect(ask=True)`.** A dialog
+  on the user's own screen (macOS, Windows, or Linux with zenity/kdialog) asks
+  for the password, and for the user name if it isn't known. What they type
+  goes straight to the server, is used for that connection only, and is never
+  returned to the assistant, saved or captured. Over SSH, keys are tried
+  first. On first contact the dialog shows the host key's fingerprint, and
+  the key is saved to `known_hosts` only if the user clicks Trust. A key that
+  differs from one on record is never offered. The new `expect` step
+  `ask_password` does the same for a login prompt later in a session, such as
+  a craft port's `login:`.
+- **Credentials from environment variables:** `SERIAL_CONSOLE_PASSWORD_<NAME>`
+  and `SERIAL_CONSOLE_USERNAME_<NAME>` back `credential="<name>"` and are
+  checked before the file and keychain.
 - `reconnect_last` and named connections remember network targets (transport,
   host, port, user name, credential name), never a secret.
 - `SERIAL_CONSOLE_NETWORK_HOSTS` (the connector's "Network consoles allowed"
@@ -46,8 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   off. `SERIAL_CONSOLE_CREDENTIALS` points at another credentials file.
 - Tests run local telnet, raw TCP, RFC 2217 and SSH servers, so the network
   paths are covered in CI without hardware.
-- Field Guide chapter 07, "Console Servers, ser2net and SSH"; the
-  `serial-console` skill covers network consoles and passwords by name.
+- Field Guide chapter 07, "Network Consoles: Telnet, SSH, ser2net"; the
+  `serial-console` skill covers network consoles and password logins, and the
+  Junos and IOS skills cover reaching the same CLI over SSH or telnet.
 
 ### Changed
 - The `expect` login example in the tool description, README and Field Guide

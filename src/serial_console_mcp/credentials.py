@@ -4,6 +4,11 @@ A password never travels through the conversation or a tool argument. The user
 stores it once, outside the chat, and tools refer to it by a name such as
 "bench-opengear". Lookup order:
 
+  0. Environment variables of the server process, set by the user (for
+     example in the MCP client's config): SERIAL_CONSOLE_PASSWORD_<NAME> and,
+     optionally, SERIAL_CONSOLE_USERNAME_<NAME>. <NAME> is the credential
+     name in capitals with every other character turned into "_", so
+     "bench-pi" is SERIAL_CONSOLE_PASSWORD_BENCH_PI.
   1. The credentials file: credentials.json in the app's settings folder, or the
      path in SERIAL_CONSOLE_CREDENTIALS. On macOS/Linux it must not be readable
      by group or others (chmod 600), or it is refused. Entries look like
@@ -50,6 +55,12 @@ class Credential:
 
 def valid_name(name: str) -> bool:
     return bool(_NAME_RE.match(name or ""))
+
+
+def env_names(name: str) -> tuple[str, str]:
+    """(password variable, user-name variable) for credential `name`."""
+    key = re.sub(r"[^A-Z0-9]", "_", name.upper())
+    return f"SERIAL_CONSOLE_PASSWORD_{key}", f"SERIAL_CONSOLE_USERNAME_{key}"
 
 
 def file_path(state_dir: Path) -> Path:
@@ -110,6 +121,10 @@ def lookup(name: str, state_dir: Path) -> Credential:
         raise CredentialError(
             f"{name!r} is not a credential name. Names are letters, digits and . _ @ -, "
             f"up to 64 characters. Pass the name of a stored credential, never a password.")
+    pw_var, user_var = env_names(name)
+    if os.environ.get(pw_var):
+        return Credential(name, os.environ[pw_var], os.environ.get(user_var, "").strip(),
+                          f"environment {pw_var}")
     path = file_path(state_dir)
     entry = _read_file(path).get(name)
     if isinstance(entry, dict) and isinstance(entry.get("password"), str):
@@ -126,7 +141,10 @@ def lookup(name: str, state_dir: Path) -> Credential:
     raise CredentialError(
         f"No stored credential named {name!r}. Ask the user to store it themselves, in a "
         f"terminal (not in this chat): `serial-console-mcp credential set {name}` "
-        f"(add --username USER for a login name). Never ask for the password in the chat.")
+        f"(add --username USER for a login name), or to set {pw_var} in the server's "
+        f"environment. For a one-off login, connect with ask=True instead: the user types "
+        f"the password into a dialog on their screen. Never ask for the password in the "
+        f"chat.")
 
 
 def names(state_dir: Path) -> list[tuple[str, str]]:

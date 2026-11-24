@@ -19,7 +19,8 @@ Transports:
 
   * tcp      raw bytes over TCP (ser2net "raw", many device servers)
   * telnet   RFC 854 client with option negotiation: BINARY, SGA, ECHO, TTYPE,
-             NAWS; everything else is refused. Reverse-telnet ports on console
+             NAWS; everything else is refused. A device's own telnet service
+             (routers, switches, Linux boxes), reverse-telnet ports on console
              servers (Opengear, Cisco, Lantronix, Digi, Avocent) and ser2net
              "telnet" ports. CR is sent as CR NUL unless BINARY was agreed.
   * rfc2217  telnet plus RFC 2217 COM-port control, via pyserial's client: baud,
@@ -64,12 +65,15 @@ def unsupported(port, what: str) -> str:
         "tcp": "Raw TCP carries bytes only. If the device server speaks RFC 2217 "
                "(ser2net 'telnet' mode with rfc2217, many Moxa/Lantronix/Digi units), "
                "connect with transport=\"rfc2217\" to get DTR/RTS, BREAK and baud control.",
-        "telnet": "Telnet carries BREAK (sent as IAC BRK) but no modem lines. If the "
-                  "console server supports RFC 2217 on this port, connect with "
-                  "transport=\"rfc2217\" for DTR/RTS and baud control; otherwise use the "
-                  "console server's own port menu.",
+        "telnet": "Telnet carries BREAK (sent as IAC BRK) but no modem lines. Telnet "
+                  "straight to a device has no serial line to control; use its serial "
+                  "console for that. Through a console server that supports RFC 2217 on "
+                  "this port, connect with transport=\"rfc2217\" for DTR/RTS and baud "
+                  "control; otherwise use the console server's own port menu.",
         "ssh": "SSH carries BREAK (an RFC 4335 break request) but no modem lines or baud "
-               "rate. Set those in the console server's port configuration.",
+               "rate. SSH straight to a device has no serial line to control; use its "
+               "serial console for that. Through a console server, set them in its port "
+               "configuration.",
     }
     return f"{what} is not available over {kind}. {hints.get(kind, '')}".rstrip()
 
@@ -360,8 +364,8 @@ class TelnetTransport(TcpTransport):
         return data
 
     def send_break(self, duration: float = 0.25) -> None:
-        # Telnet BREAK has no duration; the console server holds the line for
-        # its own configured break time.
+        # Telnet BREAK has no duration; a console server holds the line for its
+        # own configured break time, a device's telnet server does what it likes.
         self._send_raw(bytes((IAC, BRK)))
 
     def describe(self) -> str:

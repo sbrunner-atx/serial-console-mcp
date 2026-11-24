@@ -15,6 +15,11 @@ Connect with the `cisco-console` preset (9600 8N1, CR, prompt regex
 `[#>] ?$`, ansi terminal). Send a bare return first and read the prompt. The
 prompt tells you the mode; never assume it.
 
+The same CLI is on a management address over SSH or telnet: keep the preset
+and add `transport="ssh"` (or `"telnet"`), `host` and `username`, plus
+`ask=True` when the user will type the password. ROMMON and password
+recovery exist only on the console port.
+
 ## The modes, read from the prompt
 
 | Prompt | Mode | You are in |
@@ -23,7 +28,7 @@ prompt tells you the mode; never assume it.
 | `Switch#` | Privileged EXEC | All `show`, `copy`, `reload`, `debug`. |
 | `Switch(config)#` | Global configuration | Changes apply immediately as you type them. |
 | `Switch(config-if)#` etc. | Sub-mode | Interface, line, router, VLAN sections. |
-| `Username:` / `Password:` | Login | Ask the user for credentials; never guess. |
+| `Username:` / `Password:` | Login | Ask the user for the user name; send the password with `expect` `ask_password` or `send_credential`, never through the chat. |
 | `rommon 1 >` / `switch:` | Boot monitor | The OS is not running. Stop and tell the user. |
 
 `--More--` at the bottom is the pager, not a prompt.
@@ -31,7 +36,8 @@ prompt tells you the mode; never assume it.
 ## Moving between modes
 
 - User to privileged: `enable`. Expect `Password:` or `#`; answer the password with
-  `expect` `send_credential` from a credential the user stored, never typed in the chat.
+  `expect` `ask_password` (the user types it into a dialog) or `send_credential` (one
+  the user stored), never typed in the chat.
 - Privileged to configuration: `configure terminal`. Expect `(config)#`.
 - Into a section: `interface GigabitEthernet1/0/1`, `line vty 0 4`, `vlan 10`.
 - One level up: `exit`. All the way to `#`: `end` (or Ctrl-Z).

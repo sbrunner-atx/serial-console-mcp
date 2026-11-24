@@ -35,10 +35,12 @@ with a serial port:
   IoT gateways, alarm and access-control panels, UPS and PDU menus, lab
   instruments, industrial controllers, Linux and BIOS consoles and
   microcontrollers work too.
-- **Consoles on the network.** A console server's reverse-telnet or per-port
-  SSH (Opengear, Cisco, Lantronix, Digi, Avocent), ser2net and RFC 2217 device
-  servers, raw TCP, and SSH shells on a bench computer, with the same tools as a
-  local cable. See [Network consoles](#network-consoles).
+- **Consoles on the network.** Telnet or SSH straight to the device (a Juniper
+  or Cisco management address, a Linux box, a BMC), a console server's
+  reverse-telnet or per-port SSH (Opengear, Cisco, Lantronix, Digi, Avocent),
+  ser2net and RFC 2217 device servers, and raw TCP, with the same tools as a
+  local cable. User name and password logins work without the password ever
+  going through the chat. See [Network consoles](#network-consoles).
 
 You say what you want in plain language. The assistant drives the console
 through this server, Claude Desktop asks you to approve each step, and bundled
@@ -109,32 +111,56 @@ hours unread, the oldest bytes are dropped and `status` says how many.
 
 ### Network consoles
 
-Once a network console is open, every tool above works on it the same way:
-prompts, `expect`, `send_keys` and `screen`, capture, the transcript,
-read-only mode, idle auto-close and `status`.
+Many devices answer the same CLI three ways: on the serial console or craft
+port, over telnet and over SSH. A Juniper router is a good example. Once a
+network console is open, every tool above works on it the same way: prompts,
+`expect`, `send_keys` and `screen`, capture, the transcript, read-only mode,
+idle auto-close and `status`.
 
 | Transport | For | BREAK, DTR/RTS, baud |
 | --- | --- | --- |
-| `telnet` | Reverse-telnet ports on console servers (Opengear, Cisco, Lantronix, Digi, Avocent), ser2net telnet ports | BREAK (IAC BRK); the console server's port settings decide the rest |
+| `telnet` | The device's own telnet (routers, switches, Linux boxes); reverse-telnet ports on console servers (Opengear, Cisco, Lantronix, Digi, Avocent); ser2net telnet ports | BREAK (IAC BRK): through a console server it reaches the serial line; a device's own telnet decides what it means |
+| `ssh` | The device's own SSH (routers, switches, BMCs, a bench Pi); a console server's per-port SSH | BREAK (SSH break request): passed on by console servers, usually ignored by a device's own SSH |
 | `rfc2217` | ser2net and device servers with RFC 2217 COM-port control | All of them, set from here |
-| `ssh` | A console server's per-port SSH, or a shell on a bench computer, BMC or router | BREAK (SSH break request) |
 | `tcp` | Raw TCP: ser2net raw ports, simple device servers | Bytes only |
 
+A telnet or SSH session to the device itself reaches the running system. The
+boot loader, ROMMON and password recovery are only on the serial console:
+connect to it directly, or through a console server.
+
 Give `transport` and `host` (plus `tcp_port`), or one address as `port`:
-`telnet://cs1:2003`, `ssh://admin@bench-pi`, `tcp://10.0.0.5:4001`,
-`rfc2217://ser2net:3001`. Telnet defaults to port 23 and SSH to your
+`ssh://admin@mx1`, `telnet://192.0.2.1`, `telnet://cs1:2003`,
+`tcp://10.0.0.5:4001`, `rfc2217://ser2net:3001`. Telnet defaults to port 23 and SSH to your
 `~/.ssh/config` or 22; raw TCP and RFC 2217 need the port.
 
 **Credentials never go through the chat.**
 
 - **SSH** reads `~/.ssh/config`, so Host aliases, `User`, `Port`,
   `IdentityFile` and `ProxyJump` work. Keys come from the SSH agent and your
-  key files. The host key must already be in `~/.ssh/known_hosts`: an unknown
-  or changed key is refused before anything is sent, and host key checking is
-  never turned off. To trust a new device, run `ssh host` once in a terminal and
-  check the fingerprint.
-- **Passwords** (a console server's telnet login, a password-only SSH device, a
-  device's own login) are stored by you, in a terminal, under a name:
+  key files. The host key must be in `~/.ssh/known_hosts`: a changed key is
+  always refused before anything is sent, and host key checking is never
+  turned off. A device seen for the first time is trusted only by you: run
+  `ssh host` once in a terminal, or let `ask` below show you its fingerprint
+  in a dialog.
+- **A user name and password for this one connection.** Say so ("SSH to
+  192.0.2.1, I'll type the password"), and the assistant connects with
+  `ask=True`. A dialog on your screen asks for the password, and for the user
+  name if it isn't known. What you type goes straight to the server process,
+  is used for that connection only, and is never shown to the assistant or
+  written anywhere. For SSH, your keys are tried first and the dialog only
+  appears if they are refused. On first contact, a second dialog shows the
+  host key fingerprint and saves the key to `known_hosts` only if you click
+  Trust. Dialogs work on macOS, on Windows, and on Linux with zenity or
+  kdialog.
+- **Environment variables**, if you prefer them: set
+  `SERIAL_CONSOLE_PASSWORD_<NAME>` (and optionally
+  `SERIAL_CONSOLE_USERNAME_<NAME>`) in the server's environment, for example
+  the `env` block of your MCP client config. Then `credential="<name>"` uses
+  them. `<NAME>` is the name in capitals with other characters turned into
+  `_`, so `bench-pi` becomes `SERIAL_CONSOLE_PASSWORD_BENCH_PI`. Anyone who
+  can read that config can read the password.
+- **Stored passwords** (a console server's telnet login, a password-only SSH
+  device, a device's own login) are kept by you, in a terminal, under a name:
 
   ```bash
   serial-console-mcp credential set bench-opengear --username admin
@@ -177,6 +203,7 @@ desktop app, upload them as described under
 | `SERIAL_CONSOLE_IDLE_MINUTES=15` | Auto-close a port idle that long (default: never) |
 | `SERIAL_CONSOLE_NETWORK_HOSTS=10.20.0.0/16,*.bench.lan` | Hosts network consoles may reach: names with `*` wildcards and address ranges. Empty (the default) allows any host; `none` turns network consoles off |
 | `SERIAL_CONSOLE_CREDENTIALS=/path/file.json` | Use this credentials file instead of `credentials.json` in the settings folder |
+| `SERIAL_CONSOLE_PASSWORD_<NAME>`, `SERIAL_CONSOLE_USERNAME_<NAME>` | Password (and user name) for `credential="<name>"`, checked before the file and keychain |
 
 Set them in the server's entry in `claude_desktop_config.json` under `"env"`.
 
@@ -271,6 +298,7 @@ Plain-English requests work. Some examples:
 - "Open the BIOS console at 115200 and show me the screen; go down two and press Enter." (`screen-console` preset, `screen`, `send_keys`)
 - "Reconnect to the same port as last time." (it remembers)
 - "Telnet to the console server cs1, port 2003, with the bench-opengear credential."
+- "SSH to the MX at 192.0.2.1 as admin; I'll type the password." (`ask=True`)
 - "SSH to bench-pi and run dmesg." (a `~/.ssh/config` alias)
 - "Connect to rfc2217://ser2net:3001 at 115200 and reset the board with DTR."
 - "Send a return, then read until the login prompt."
@@ -300,13 +328,18 @@ Icom radio (CI-V), tell Claude — it can send the hex commands those radios exp
 - Start a brand-new chat and ask "What serial ports do you see?" again.
 
 **A network console won't connect.**
-- "Refused: nothing is listening there": wrong TCP port for that serial line,
-  or the port is disabled on the console server. Check its port map.
+- "Refused: nothing is listening there": the device's telnet or SSH service
+  is off (telnet often is by default), or, on a console server, the TCP port
+  for that serial line is wrong or disabled. Check its port map.
 - "Host key could not be verified": run `ssh host` once in a terminal, check
-  the fingerprint, accept it, then try again.
-- "SSH login was refused": add your public key to the device, or store its
-  password with `serial-console-mcp credential set NAME` and ask Claude to use
-  that credential.
+  the fingerprint, accept it, then try again. Or ask Claude to connect with
+  `ask` and compare the fingerprint in the dialog.
+- "Host key is NOT the one on record": the device was reinstalled, or
+  something is in the way. Find out which before removing the old line with
+  `ssh-keygen -R host`.
+- "SSH login was refused": add your public key to the device, ask Claude to
+  connect with `ask` so you can type the password, or store it with
+  `serial-console-mcp credential set NAME`.
 - A console server usually lets one session use a port at a time; close the
   other session.
 

@@ -72,31 +72,49 @@ For a Juniper, also load `junos-operating`; for a Cisco or IOS-like CLI,
 ## Network consoles
 
 `connect` reaches consoles over the network with `transport` and `host`
-(plus `tcp_port`), or one URL as `port`:
+(plus `tcp_port`), or one URL as `port`. Telnet and SSH usually go straight to
+the device: a Juniper or Cisco management address, a Linux box, a BMC. They
+reach the same CLI as its console port. A console server port is the other
+case.
 
 | Transport | Use it for | Lines |
 | --- | --- | --- |
-| `telnet` | Console server reverse-telnet ports (Opengear, Cisco 2000+line, Lantronix), ser2net telnet | BREAK only |
+| `telnet` | A device's own telnet; console server reverse-telnet ports (Opengear, Cisco 2000+line, Lantronix); ser2net telnet | BREAK only |
+| `ssh` | A device's own SSH (router, switch, bench Pi, BMC); a console server's per-port SSH; `~/.ssh/config` aliases work | BREAK only |
 | `rfc2217` | ser2net or a device server with RFC 2217: baud, DTR/RTS and BREAK reach the remote port | All |
-| `ssh` | A console server's per-port SSH, a shell on a bench Pi, BMC or router; `~/.ssh/config` aliases work | BREAK only |
 | `tcp` | ser2net raw ports and simple device servers | None |
 
 - Once open, everything works as on a local port. Baud and framing apply only
-  to serial and `rfc2217`; over telnet, ssh and tcp the console server decides.
+  to serial and `rfc2217`; telnet and SSH to a device have none, and through a
+  console server its port settings decide.
+- A session to the device itself never reaches the boot loader, ROMMON or
+  password recovery, and BREAK there means whatever the device's server makes
+  of it (usually nothing). Those need the serial console.
 - If a tool says a transport cannot do something (`set_lines` over telnet),
-  tell the user what would work: `rfc2217`, or the console server's port menu.
+  tell the user what would work: the serial console, `rfc2217`, or the console
+  server's port menu.
 - A dropped network console says the connection stopped. Run `disconnect`, then
   `reconnect_last`. A console server port usually takes one session at a time.
 
 ## Passwords: by name only
 
 Never ask for a password in the chat, never put one in `send`, `send_text`,
-`query_text` or a URL, and never repeat one the user pastes. Passwords live in
-named credentials that the user stores themselves, in a terminal:
-`serial-console-mcp credential set NAME --username USER`. Then:
+`query_text` or a URL, and never repeat one the user pastes. If the user offers
+to tell you a password, decline and use one of these instead. The user name is
+not a secret and can be passed as `username`.
 
-- `connect(..., credential="NAME")` answers a console server's `login:` and
-  `Password:` prompts right after connecting, or offers the password to SSH.
+- **One-off login (the usual case for an ad-hoc device):** `connect(...,
+  ask=True)`. The user types the password, and the user name if needed, into a
+  dialog on their own screen. SSH keys are tried first. On first contact the
+  dialog also shows the SSH host key fingerprint, and the key is saved only if
+  the user clicks Trust. Tell the user a dialog is coming before you call it.
+  A cancelled dialog means stop; don't retry on your own.
+- **Stored by name:** the user runs `serial-console-mcp credential set NAME
+  --username USER` in a terminal, or sets `SERIAL_CONSOLE_PASSWORD_<NAME>` in
+  the server's environment. Then:
+- `connect(..., credential="NAME")` answers the `login:` and `Password:`
+  prompts right after connecting (the device's own over telnet, or a console
+  server's), or offers the password to SSH.
 - `expect([... {"send_credential": "NAME", "expect": "> "}])` sends a device's
   own password at its prompt.
 - If the result says no credential has that name, give the user the command
@@ -104,9 +122,11 @@ named credentials that the user stores themselves, in a terminal:
 
 SSH keys and trust come from the user's own setup: the SSH agent, key files
 and `~/.ssh/config`. If the host key could not be verified against
-`known_hosts`, stop and tell the user to check the fingerprint and accept it
-themselves (`ssh host` once in a terminal). Never suggest turning host key
-checking off.
+`known_hosts`, the user decides: connect again with `ask=True` so they can
+compare the fingerprint in the dialog, or have them run `ssh host` once in a
+terminal. If the result says the key is NOT the one on record, stop and tell
+the user; never offer to remove the old key, and never suggest turning host
+key checking off.
 
 ## Choosing settings
 

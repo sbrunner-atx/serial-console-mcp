@@ -14,6 +14,12 @@ Connect with the `juniper-craft` preset (9600 8N1, CR, prompt regex
 `[#>%] ?$`, ansi terminal). Send a bare return first and read the prompt. The
 prompt tells you the mode; never assume it.
 
+The same CLI is on the management address over SSH or telnet: keep the preset
+and add `transport="ssh"` (or `"telnet"`), `host` and `username`, plus
+`ask=True` when the user will type the password. Everything below applies
+there too. The loader prompt and root password recovery exist only on the
+console or craft port.
+
 ## The three modes, read from the prompt
 
 | Prompt ends in | Mode | You are in |
@@ -23,7 +29,10 @@ prompt tells you the mode; never assume it.
 | `#` with `[edit]` above it | Configuration | Editing the candidate config. Nothing takes effect until `commit`. |
 
 `{master:0}` above the prompt means a Virtual Chassis member; ignore it.
-`login:` means nobody is logged in: ask the user for credentials, never guess.
+`login:` means nobody is logged in. Ask the user for the user name, never
+guess it, and never take a password in the chat. Send the password with an
+`expect` step: `{ask_password: true}` (the user types it into a dialog) or
+`{send_credential: NAME}`.
 
 ## Out of the BSD shell, and back
 
@@ -48,7 +57,8 @@ shell, not configuration mode, when there is no `[edit]` line above it.
   Run none of them without the user's explicit words.
 - A non-root user who needs the shell uses `start shell user root`, which asks
   for the root password: never guess and never ask for it in the chat; send it with
-  `expect` `send_credential` from a credential the user stored (see `serial-console`).
+  `expect` `ask_password` (the user types it into a dialog) or `send_credential` (one the
+  user stored); see `serial-console`.
 - csh echoes `exit` twice when a nested shell closes; that is normal.
 
 ## Into configuration mode, and out

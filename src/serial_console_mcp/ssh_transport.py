@@ -1,4 +1,5 @@
-"""SSH transport: an interactive shell, or a console server's per-port SSH.
+"""SSH transport: a device's own SSH (router, switch, Linux box), or a console
+server's per-port SSH.
 
 Authentication and host trust come from the user's own OpenSSH setup, never
 from the conversation:
@@ -9,8 +10,12 @@ from the conversation:
   * The server's host key must already be in ~/.ssh/known_hosts (or the
     config's UserKnownHostsFile). An unknown or changed key refuses the
     connection; nothing here ever accepts one on its own.
-  * A password is used only when the caller passes one looked up from a named
-    credential (see credentials.py); the library never prompts.
+  * A password is used only when the caller passes one: from a named
+    credential (see credentials.py) or typed by the user into a dialog on
+    their own screen (ask.py); the library never prompts.
+  * A host key seen for the first time can be trusted only by the user, in a
+    dialog that shows its fingerprint (host_key_check / trust_host_key). A
+    key that differs from a known one is always refused.
 
 Needs the [ssh] extra (asyncssh). One asyncio loop thread serves every SSH
 connection; the reader thread sees an ordinary blocking `read()`.
@@ -18,14 +23,23 @@ connection; the reader thread sees an ordinary blocking `read()`.
 from __future__ import annotations
 
 import asyncio
+import logging
+import os
+import shutil
+import socket
+import subprocess
 import threading
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 try:
     import asyncssh
 except ImportError:  # optional extra
     asyncssh = None
+else:
+    # asyncssh logs every connection step at INFO; keep stderr to real problems.
+    logging.getLogger("asyncssh").setLevel(logging.WARNING)
 
 from .transports import TransportClosed, _hostport
 
@@ -42,7 +56,13 @@ _loop_lock = threading.Lock()
 
 
 class SSHSetupError(Exception):
-    """Connecting failed for a reason the user can act on; str() says what."""
+    """Connecting failed for a reason the user can act on; str() says what.
+
+    `reason` is "hostkey" (not verifiable), "auth" (login refused) or "other"."""
+
+    def __init__(self, message: str, reason: str = "other"):
+        super().__init__(message)
+        self.reason = reason
 
 
 def available() -> bool:
@@ -118,7 +138,12 @@ class SSHTransport:
         except SSHSetupError:
             raise
         except BaseException as e:  # map library errors to something actionable
-            raise SSHSetupError(_explain(e, host)) from e
+            reason = "other"
+            if isinstance(e, asyncssh.HostKeyNotVerifiable):
+                reason = "hostkey"
+            elif isinstance(e, asyncssh.PermissionDenied):
+                reason = "auth"
+            raise SSHSetupError(_explain(e, host), reason) from e
         self.is_open = True
 
     async def _open(self, password, term, cols, rows, connect_timeout):
@@ -261,3 +286,136 @@ def _explain(e: BaseException, host: str) -> str:
     if isinstance(e, ValueError):  # bad config value, unreadable key file, ...
         return f"SSH setup problem for {host}: {e}"
     return f"SSH connection to {host} failed: {type(e).__name__}: {e}"
+
+
+# ----------------------------------------------------------------------------
+# First-contact host keys: the user decides, in a dialog, after seeing the key.
+# ----------------------------------------------------------------------------
+
+@dataclass
+class HostKeyCheck:
+    host: str            # as the caller named it (may be a ~/.ssh/config alias)
+    hostname: str        # after ~/.ssh/config HostName
+    port: int
+    addr: str            # an IP address of hostname, "" if it did not resolve
+    alias: str           # HostKeyAlias from the config, else ""
+    known_hosts: Path    # where a trusted key is written
+    known: bool          # some key is already on record for this host
+    algorithm: str
+    fingerprint: str     # "SHA256:..."
+    key_line: str        # the public key, "algorithm base64"
+
+    def pattern(self) -> str:
+        names = [self.alias] if self.alias else [self.hostname]
+        if self.addr and self.addr not in names:
+            names.append(self.addr)
+        if self.port != 22:
+            names = [f"[{n}]:{self.port}" for n in names]
+        return ",".join(names)
+
+
+def _ssh_g(host: str, port: int | None) -> dict[str, list[str]]:
+    """What OpenSSH itself resolves for `host` (`ssh -G`), or {} without ssh."""
+    exe = shutil.which("ssh")
+    if not exe:
+        return {}
+    cmd = [exe, "-G"]
+    if CONFIG_PATHS:
+        cmd += ["-F", str(CONFIG_PATHS[0])]
+    elif CONFIG_PATHS is not None:  # tests: no config at all
+        cmd += ["-F", os.devnull]
+    if port:
+        cmd += ["-p", str(int(port))]
+    cmd.append(host)
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    except Exception:
+        return {}
+    if r.returncode != 0:
+        return {}
+    out: dict[str, list[str]] = {}
+    for line in r.stdout.splitlines():
+        k, _, v = line.partition(" ")
+        out.setdefault(k.lower(), []).append(v.strip())
+    return out
+
+
+def _known_hosts_files(cfg: dict[str, list[str]]) -> list[Path]:
+    if KNOWN_HOSTS is not None:
+        return [Path(KNOWN_HOSTS)]
+    files = []
+    for k in ("userknownhostsfile", "globalknownhostsfile"):
+        for v in cfg.get(k, []):
+            files += [Path(x).expanduser() for x in v.split()]
+    return files or [Path("~/.ssh/known_hosts").expanduser()]
+
+
+_PREFERRED_HOST_KEYS = ["ssh-ed25519", "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384",
+                        "ecdsa-sha2-nistp521", "rsa-sha2-512", "rsa-sha2-256", "ssh-rsa"]
+
+
+def host_key_check(host: str, port: int | None = None, timeout: float = 15.0) -> HostKeyCheck:
+    """Fetch the server's host key (no login is attempted) and say whether any
+    key is on record for it. Raises SSHSetupError if the server can't be reached."""
+    if asyncssh is None:
+        raise SSHSetupError("SSH needs the optional asyncssh package.")
+    cfg = _ssh_g(host, port)
+    hostname = (cfg.get("hostname") or [host])[0]
+    real_port = int(port or (cfg.get("port") or ["22"])[0])
+    alias = (cfg.get("hostkeyalias") or [""])[0]
+    if alias.lower() == "none":
+        alias = ""
+    try:
+        addr = socket.getaddrinfo(hostname, real_port, type=socket.SOCK_STREAM)[0][4][0]
+    except OSError:
+        addr = ""
+
+    async def _fetch(algs):
+        return await asyncssh.get_server_host_key(
+            host, port or (), server_host_key_algs=algs,
+            config=CONFIG_PATHS if CONFIG_PATHS is not None else ())
+    try:
+        try:  # the key OpenSSH would show first, so fingerprints match `ssh`
+            key = _run(_fetch(_PREFERRED_HOST_KEYS), timeout + 5)
+        except asyncssh.Error:
+            key = _run(_fetch(()), timeout + 5)
+    except BaseException as e:
+        raise SSHSetupError(_explain(e, host)) from e
+    if key is None:
+        raise SSHSetupError(f"{host} sent no host key.")
+    files = _known_hosts_files(cfg)
+    known = False
+    match_port = real_port if real_port != 22 else None
+    for f in files:
+        if not f.is_file():
+            continue
+        try:
+            kh = asyncssh.read_known_hosts(str(f))
+        except Exception:
+            continue
+        found = kh.match(alias or hostname, addr, match_port)
+        if any(found[:3]):  # host keys, CA keys or revoked keys on record
+            known = True
+            break
+    line = key.export_public_key().decode().strip()
+    return HostKeyCheck(host=host, hostname=hostname, port=real_port, addr=addr,
+                        alias=alias, known_hosts=files[0], known=known,
+                        algorithm=key.get_algorithm(), fingerprint=key.get_fingerprint(),
+                        key_line=" ".join(line.split()[:2]))
+
+
+def trust_host_key(check: HostKeyCheck) -> Path:
+    """Append the checked key to known_hosts. Only for a host with no key on record."""
+    if check.known:
+        raise SSHSetupError(f"A different host key is already on record for {check.host}; "
+                            f"it is not replaced.")
+    path = check.known_hosts
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    new = not path.exists()
+    with open(path, "a", encoding="utf-8") as f:
+        if not new and path.stat().st_size and not path.read_bytes().endswith(b"\n"):
+            f.write("\n")
+        f.write(f"{check.pattern()} {check.key_line}\n")
+    if new and os.name != "nt":
+        os.chmod(path, 0o600)
+    return path

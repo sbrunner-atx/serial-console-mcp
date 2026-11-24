@@ -162,7 +162,7 @@ def telnet():
 def test_telnet_negotiation(telnet):
     out = _ok(m.connect(transport="telnet", host="127.0.0.1", tcp_port=telnet.port,
                         terminal="xterm", cols=100, rows=30, name="cs"))
-    assert "telnet to 127.0.0.1" in out and "BREAK works" in out
+    assert "telnet to 127.0.0.1" in out and "send_break sends a" in out
     assert wait_for(lambda: telnet.ttype is not None and telnet.naws is not None)
     assert telnet.ttype == b"XTERM"
     assert telnet.naws == (100, 30)
@@ -228,7 +228,7 @@ def test_telnet_break_and_refused_lines(telnet):
     assert "not available over telnet" in out and "rfc2217" in out
     out = m.pulse_line("RTS", 50)
     assert "not available over telnet" in out
-    assert "n/a (telnet: no modem lines; BREAK works)" in m.status()
+    assert "n/a (telnet: no modem lines; BREAK can be sent)" in m.status()
 
 
 def test_telnet_keys_and_screen(telnet):
@@ -497,7 +497,7 @@ def test_ssh_key_login_shell(sshd):
     out = _ok(m.connect(transport="ssh", host="127.0.0.1", tcp_port=sshd.port,
                         username="tester", prompt="bench$ ", terminal="xterm", cols=120,
                         rows=40, name="pi"))
-    assert "SSH to tester@127.0.0.1" in out and "BREAK works" in out
+    assert "SSH to tester@127.0.0.1" in out and "send_break sends a" in out
     assert "Welcome to the bench" in m.read_until_prompt()
     out = m.query_text("uname -a")
     assert "Linux benchpi" in out, out
@@ -559,7 +559,7 @@ def test_ssh_break_lines_and_hangup(sshd):
     assert wait_for(lambda: sshd.breaks == [300])
     assert "[BREAK]" in m.read_until_prompt()
     assert "not available over ssh" in m.set_lines(dtr=True)
-    assert "n/a (ssh: no modem lines; BREAK works)" in m.status()
+    assert "n/a (ssh: no modem lines; BREAK can be sent)" in m.status()
     m.send_text("exit")
     assert wait_for(lambda: not m._conns["pi"].reader_alive, 5)
     assert "ssh connection 'pi' has stopped" in m.send_text("x")
