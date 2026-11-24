@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-23
+
+### Changed
+- Package descriptions (README opening, PyPI summary, connector description,
+  MCP Registry entry) name all three ways in: a serial cable, telnet or SSH.
+  No code changes.
+
 ## [0.4.0] - 2026-11-23
 
 ### Added
