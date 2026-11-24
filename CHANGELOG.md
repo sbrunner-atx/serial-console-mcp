@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `credential remove` manage them.
 - **One-off user name and password logins: `connect(ask=True)`.** A dialog
   on the user's own screen (macOS, Windows, or Linux with zenity/kdialog) asks
-  for the password, and for the user name if it isn't known. What they type
+  for the password, and for the user name if it is not known. What they type
   goes straight to the server, is used for that connection only, and is never
   returned to the assistant, saved or captured. Over SSH, keys are tried
   first. On first contact the dialog shows the host key's fingerprint, and
@@ -159,10 +159,10 @@ The terminal release: the VT100 / ANSI / xterm family, as an agent needs it.
 
 ### Added
 - **Terminal modes** on `connect(terminal=...)` and in presets. `dumb` (default)
-  passes raw bytes. `ansi` strips colour and escape sequences as bytes arrive
+  passes raw bytes. `ansi` strips color and escape sequences as bytes arrive
   (chunk-safe) and renders CR overwrites, backspaces, erase-line and cursor
-  moves, so shells, coloured prompts and progress bars read cleanly and prompt
-  matching works through the colour codes. The console presets use it.
+  moves, so shells, colored prompts and progress bars read cleanly and prompt
+  matching works through the color codes. The console presets use it.
 - **Screen model** (`terminal="xterm"` or `"vt100"`, `cols`/`rows`): a real
   character grid kept by `pyte`, for BIOS setup, RAID/BMC consoles, menu-driven
   switches, vi/top. The `screen` tool shows it with the cursor position; the

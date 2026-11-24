@@ -60,7 +60,7 @@ For a Juniper, also load `junos-operating`; for a Cisco or IOS-like CLI,
    turns the reply into a model, frequency or mode. Icom CI-V and other binary
    protocols: `send_hex`, then `read_available`, then `civ_parse`. Rotators:
    `rotator_build` for the command, `rotator_parse` for the position; a move
-   replies nothing, so read the position afterwards to confirm.
+   replies nothing, so read the position afterward to confirm.
 5. **Garbage means baud, silence means line ending.** `�` and box characters:
    run `detect_baud`. Echo but no reply: the device wants CR instead of LF or
    the reverse. Nothing at all: send a bare return to draw a prompt, then check
@@ -108,7 +108,7 @@ not a secret and can be passed as `username`.
   dialog on their own screen. SSH keys are tried first. On first contact the
   dialog also shows the SSH host key fingerprint, and the key is saved only if
   the user clicks Trust. Tell the user a dialog is coming before you call it.
-  A cancelled dialog means stop; don't retry on your own.
+  A canceled dialog means stop; do not retry on your own.
 - **Stored by name:** the user runs `serial-console-mcp credential set NAME
   --username USER` in a terminal, or sets `SERIAL_CONSOLE_PASSWORD_<NAME>` in
   the server's environment. Then:
@@ -133,7 +133,7 @@ key checking off.
 - Default is 9600 8N1, no flow control, CR. Say only what differs.
 - No preset for the device (alarm panel, UPS, instrument, IoT gateway)? Start
   at 9600 8N1, run `detect_baud` if it stays silent, and pick the terminal mode
-  by what it prints: `dumb` for plain text or binary, `ansi` for colours and
+  by what it prints: `dumb` for plain text or binary, `ansi` for colors and
   cursor codes, `xterm` with `screen` for a full-screen menu. For anything that
   can arm, disarm, unlock or switch power, use read-only mode and confirm each
   command with the user.
@@ -149,8 +149,8 @@ key checking off.
 ## Terminals
 
 - `dumb` is the default and right for CAT, CI-V, rotators and most CLIs.
-- Shells and coloured prompts: `terminal="ansi"` (the console presets set it).
-  Escape sequences are stripped as they arrive, so prompts match through colour
+- Shells and colored prompts: `terminal="ansi"` (the console presets set it).
+  Escape sequences are stripped as they arrive, so prompts match through color
   codes and progress bars render as their final line.
 - Full-screen programs (BIOS setup, RAID/BMC consoles, menu switches, vi, top):
   `terminal="xterm"` or the `screen-console` preset, then loop `send_keys` and

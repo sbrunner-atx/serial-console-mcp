@@ -52,11 +52,11 @@ rotator support follows the vendors' protocol references and has not yet met
 hardware on this bench. The other device types use the generic tools rather than
 device-specific helpers.
 
-You do **not** need to know any programming. After it's installed you talk to Claude
+You do **not** need to know any programming. Once it is installed, you talk to Claude
 normally:
 
 > **You:** What serial ports do you see?
-> **Claude:** I found two. One looks like a Silicon Labs CP210x on COM4 — that's
+> **Claude:** I found two. One looks like a Silicon Labs CP210x on COM4, which is
 > probably your device.
 >
 > **You:** Connect to COM4 at 9600 baud.
@@ -66,14 +66,14 @@ normally:
 
 ## How it works (the important part)
 
-A serial console isn't a simple question-and-answer channel. It echoes what you
+A serial console is not a simple question-and-answer channel. It echoes what you
 type, prints unsolicited messages on its own (logs, interface flaps), and can dump
 pages of output. So the moment a port is open, a background reader keeps draining
 it into a buffer. That means Claude can:
 
-- **send** a command (writes only — doesn't guess when the reply is done), then
+- **send** a command (this only writes; it does not guess when the reply is done), then
 - **read until a prompt** appears (`# `, `> `, `login:` …) to capture the whole
-  reply — even a long one — without cutting it off, or
+  reply, even a long one, without cutting it off, or
 - **read whatever's waiting** for streaming/unsolicited output.
 
 This is the same model `minicom` and `expect` use, which is why it handles
@@ -102,7 +102,7 @@ interactive CLIs properly.
 
 Ports are opened by name ("rig", "rotator"); tools default to the most recently
 used one. Each connection has a terminal mode: `dumb` (raw bytes, the default),
-`ansi` (colours and escape sequences stripped, CR/backspace overwrites applied,
+`ansi` (colors and escape sequences stripped, CR/backspace overwrites applied,
 prompts matched on the line as displayed even after a device redraws it with
 spaces and backspaces; used by the console presets), or `xterm`/`vt100` (a real screen you can read
 with `screen`; needs `pip install 'serial-console-mcp[screen]'`, included in
@@ -121,14 +121,14 @@ idle auto-close and `status`.
 | --- | --- | --- |
 | `telnet` | The device's own telnet (routers, switches, Linux boxes); reverse-telnet ports on console servers (Opengear, Cisco, Lantronix, Digi, Avocent); ser2net telnet ports | BREAK (IAC BRK): through a console server it reaches the serial line; a device's own telnet decides what it means |
 | `ssh` | The device's own SSH (routers, switches, BMCs, a bench Pi); a console server's per-port SSH | BREAK (SSH break request): passed on by console servers, usually ignored by a device's own SSH |
-| `rfc2217` | ser2net and device servers with RFC 2217 COM-port control | All of them, set from here |
+| `rfc2217` | ser2net and device servers with RFC 2217 COM-port control | All of them, set from Claude |
 | `tcp` | Raw TCP: ser2net raw ports, simple device servers | Bytes only |
 
 A telnet or SSH session to the device itself reaches the running system. The
 boot loader, ROMMON and password recovery are only on the serial console:
 connect to it directly, or through a console server.
 
-Give `transport` and `host` (plus `tcp_port`), or one address as `port`:
+Give `transport` and `host` (plus `tcp_port`), or one address in `port`:
 `ssh://admin@mx1`, `telnet://192.0.2.1`, `telnet://cs1:2003`,
 `tcp://10.0.0.5:4001`, `rfc2217://ser2net:3001`. Telnet defaults to port 23 and SSH to your
 `~/.ssh/config` or 22; raw TCP and RFC 2217 need the port.
@@ -139,19 +139,18 @@ Give `transport` and `host` (plus `tcp_port`), or one address as `port`:
   `IdentityFile` and `ProxyJump` work. Keys come from the SSH agent and your
   key files. The host key must be in `~/.ssh/known_hosts`: a changed key is
   always refused before anything is sent, and host key checking is never
-  turned off. A device seen for the first time is trusted only by you: run
-  `ssh host` once in a terminal, or let `ask` below show you its fingerprint
-  in a dialog.
+  turned off. Only you can trust a new device. Run `ssh host` once in a
+  terminal, or let `ask` below show you its fingerprint in a dialog.
 - **A user name and password for this one connection.** Say so ("SSH to
-  192.0.2.1, I'll type the password"), and the assistant connects with
+  192.0.2.1, I will type the password"), and the assistant connects with
   `ask=True`. A dialog on your screen asks for the password, and for the user
-  name if it isn't known. What you type goes straight to the server process,
+  name if it is not known. What you type goes straight to the server process,
   is used for that connection only, and is never shown to the assistant or
   written anywhere. For SSH, your keys are tried first and the dialog only
-  appears if they are refused. On first contact, a second dialog shows the
+  appears if they are refused. On first contact, a dialog first shows the
   host key fingerprint and saves the key to `known_hosts` only if you click
-  Trust. Dialogs work on macOS, on Windows, and on Linux with zenity or
-  kdialog.
+  Trust. Dialogs are built for macOS, Windows, and Linux with zenity or
+  kdialog, and so far tested on macOS.
 - **Environment variables**, if you prefer them: set
   `SERIAL_CONSOLE_PASSWORD_<NAME>` (and optionally
   `SERIAL_CONSOLE_USERNAME_<NAME>`) in the server's environment, for example
@@ -159,20 +158,21 @@ Give `transport` and `host` (plus `tcp_port`), or one address as `port`:
   them. `<NAME>` is the name in capitals with other characters turned into
   `_`, so `bench-pi` becomes `SERIAL_CONSOLE_PASSWORD_BENCH_PI`. Anyone who
   can read that config can read the password.
-- **Stored passwords** (a console server's telnet login, a password-only SSH
-  device, a device's own login) are kept by you, in a terminal, under a name:
+- **Stored passwords.** You store a password (a console server's telnet
+  login, a password-only SSH device, a device's own login) under a name, from
+  a terminal:
 
   ```bash
   serial-console-mcp credential set bench-opengear --username admin
   ```
 
   You are prompted for the password. It goes to `credentials.json` in the
-  settings folder below, with mode 600 (refused if others can read it); add
-  `--keychain` to keep it in the macOS Keychain or, with the `keyring` package,
-  your system's keyring instead. Then the assistant passes `credential="bench-opengear"`
+  settings folder below, mode 600, and is refused if others can read it.
+  `--keychain` keeps it in the macOS Keychain or, with the `keyring` package,
+  your system's keyring. The assistant passes `credential="bench-opengear"`
   to `connect`, which answers the console server's `login:` and `Password:`
-  prompts or offers the password to SSH, or uses `send_credential` in an
-  `expect` step for a device's own login. The password is never shown, and
+  prompts or offers the password to SSH. For a device's own login, it uses
+  `send_credential` in an `expect` step. The password is never shown, and
   annotated captures record `<credential hidden>`. `credential list` shows the
   names; `credential remove NAME` deletes one.
 - `reconnect_last` and named connections remember the transport, host, port,
@@ -219,7 +219,7 @@ Set them in the server's entry in `claude_desktop_config.json` under `"env"`.
    read-only mode, an idle timeout and a list of network hosts the server may
    reach; all are off or open unless you set them.
 3. In a new chat, type: **"What serial ports do you see?"** If Claude lists your
-   ports, you're done.
+   ports, you are done.
 
 No terminal, no Python, nothing to configure by hand.
 
@@ -298,7 +298,7 @@ Plain-English requests work. Some examples:
 - "Open the BIOS console at 115200 and show me the screen; go down two and press Enter." (`screen-console` preset, `screen`, `send_keys`)
 - "Reconnect to the same port as last time." (it remembers)
 - "Telnet to the console server cs1, port 2003, with the bench-opengear credential."
-- "SSH to the MX at 192.0.2.1 as admin; I'll type the password." (`ask=True`)
+- "SSH to the MX at 192.0.2.1 as admin; I will type the password." (`ask=True`)
 - "SSH to bench-pi and run dmesg." (a `~/.ssh/config` alias)
 - "Connect to rfc2217://ser2net:3001 at 115200 and reset the board with DTR."
 - "Send a return, then read until the login prompt."
@@ -308,9 +308,9 @@ Plain-English requests work. Some examples:
 
 For a router/switch console, tell Claude the prompt it should wait for (often `# `
 for enable mode or `> ` for user mode) and it will read until it sees it. For an
-Icom radio (CI-V), tell Claude — it can send the hex commands those radios expect.
+Icom radio (CI-V), tell Claude; it can send the hex commands those radios expect.
 
-## If something doesn't work
+## If something does not work
 
 **"No serial ports found."**
 - Is the device turned on?
@@ -323,11 +323,11 @@ Icom radio (CI-V), tell Claude — it can send the hex commands those radios exp
   might be holding it: a terminal (PuTTY/minicom/screen), WSJT-X, your contest
   logger, the device's own software.
 
-**Claude says it can't access serial ports at all.**
+**Claude says it cannot access serial ports at all.**
 - Make sure you fully quit and reopened Claude Desktop after installing.
 - Start a brand-new chat and ask "What serial ports do you see?" again.
 
-**A network console won't connect.**
+**A network console does not connect.**
 - "Refused: nothing is listening there": the device's telnet or SSH service
   is off (telnet often is by default), or, on a console server, the TCP port
   for that serial line is wrong or disabled. Check its port map.
@@ -373,4 +373,4 @@ starting with the first release after 0.3.3.
 Versions up to and including 0.3.3 were released under the MIT License and
 remain under it.
 
-73!
+73

@@ -54,21 +54,21 @@
   <div class="toc-group">Before you start</div>
   <div class="toc-row"><span class="tno">A</span><span class="tt"><a href="#glance">The tools at a glance</a></span><span class="leader"></span><span class="tp"><a href="#glance"></a></span></div>
   <div class="toc-row"><span class="tno">B</span><span class="tt"><a href="#install">Installing</a></span><span class="leader"></span><span class="tp"><a href="#install"></a></span></div>
-  <div class="toc-row"><span class="tno">C</span><span class="tt"><a href="#first">Your first session — a console by conversation</a></span><span class="leader"></span><span class="tp"><a href="#first"></a></span></div>
+  <div class="toc-row"><span class="tno">C</span><span class="tt"><a href="#first">Your first session: a console by conversation</a></span><span class="leader"></span><span class="tp"><a href="#first"></a></span></div>
   <div class="toc-row"><span class="tno">D</span><span class="tt"><a href="#how">How the system works</a></span><span class="leader"></span><span class="tp"><a href="#how"></a></span></div>
 
   <div class="toc-group">The settings and the rules</div>
-  <div class="toc-row"><span class="tno">01</span><span class="tt"><a href="#settings">Connection settings — the Quick Connect dialog, in words</a></span><span class="leader"></span><span class="tp"><a href="#settings"></a></span></div>
+  <div class="toc-row"><span class="tno">01</span><span class="tt"><a href="#settings">Connection settings: the Quick Connect dialog, in words</a></span><span class="leader"></span><span class="tp"><a href="#settings"></a></span></div>
   <div class="toc-row"><span class="tno">02</span><span class="tt"><a href="#standard">The console standard</a></span><span class="leader"></span><span class="tp"><a href="#standard"></a></span></div>
   <div class="toc-row"><span class="tno">03</span><span class="tt"><a href="#devices">The device playbook</a></span><span class="leader"></span><span class="tp"><a href="#devices"></a></span></div>
-  <div class="toc-row"><span class="tno">04</span><span class="tt"><a href="#shack">The shack — several ports, control lines, scripts, capture</a></span><span class="leader"></span><span class="tp"><a href="#shack"></a></span></div>
-  <div class="toc-row"><span class="tno">05</span><span class="tt"><a href="#terminals">Terminals — clean text, keys, and a real screen</a></span><span class="leader"></span><span class="tp"><a href="#terminals"></a></span></div>
-  <div class="toc-row"><span class="tno">06</span><span class="tt"><a href="#netskills">Operating skills — Junos and IOS, the basics</a></span><span class="leader"></span><span class="tp"><a href="#netskills"></a></span></div>
-  <div class="toc-row"><span class="tno">07</span><span class="tt"><a href="#network">Network consoles — telnet, SSH, ser2net, console servers</a></span><span class="leader"></span><span class="tp"><a href="#network"></a></span></div>
+  <div class="toc-row"><span class="tno">04</span><span class="tt"><a href="#shack">The shack: several ports, control lines, scripts, capture</a></span><span class="leader"></span><span class="tp"><a href="#shack"></a></span></div>
+  <div class="toc-row"><span class="tno">05</span><span class="tt"><a href="#terminals">Terminals: clean text, keys, and a real screen</a></span><span class="leader"></span><span class="tp"><a href="#terminals"></a></span></div>
+  <div class="toc-row"><span class="tno">06</span><span class="tt"><a href="#netskills">Operating skills: Junos and IOS, the basics</a></span><span class="leader"></span><span class="tp"><a href="#netskills"></a></span></div>
+  <div class="toc-row"><span class="tno">07</span><span class="tt"><a href="#network">Network consoles: telnet, SSH, ser2net, console servers</a></span><span class="leader"></span><span class="tp"><a href="#network"></a></span></div>
 
   <div class="toc-group">At the bench</div>
   <div class="toc-row"><span class="tno">E</span><span class="tt"><a href="#examples">Worked sessions</a></span><span class="leader"></span><span class="tp"><a href="#examples"></a></span></div>
-  <div class="toc-row"><span class="tno">F</span><span class="tt"><a href="#trouble">When it doesn't answer</a></span><span class="leader"></span><span class="tp"><a href="#trouble"></a></span></div>
+  <div class="toc-row"><span class="tno">F</span><span class="tt"><a href="#trouble">When it does not answer</a></span><span class="leader"></span><span class="tp"><a href="#trouble"></a></span></div>
 
   <div class="toc-group">Reference</div>
   <div class="toc-row"><span class="tno">G</span><span class="tt"><a href="#reference">Tool reference</a></span><span class="leader"></span><span class="tp"><a href="#reference"></a></span></div>
@@ -97,7 +97,7 @@
     <tr><td class="strong mono">send_keys · screen</td><td>Press Ctrl-C, Esc, Tab, arrows and F-keys by name; view the VT100/xterm screen of a full-screen console.</td><td class="get">&ldquo;Interrupt that ping&rdquo; · BIOS, BMC and menu consoles</td></tr>
     <tr><td class="strong mono">set_lines · pulse_line · send_break</td><td>Drive DTR and RTS, send BREAK; status shows CTS/DSR/CD/RI.</td><td class="get">Key a rig's PTT, reset an Arduino, interrupt a boot</td></tr>
     <tr><td class="strong mono">capture_start · capture_stop · get_transcript</td><td>Log a session to a file, raw or timestamped; re-read the rolling transcript.</td><td class="get">&ldquo;Record this console session&rdquo;</td></tr>
-    <tr><td class="strong mono">port_in_use_by · detect_baud</td><td>Which program holds a port; which baud rate produces readable text.</td><td class="get">&ldquo;It says in use&rdquo; · &ldquo;I don't know the rate&rdquo;</td></tr>
+    <tr><td class="strong mono">port_in_use_by · detect_baud</td><td>Which program holds a port; which baud rate produces readable text.</td><td class="get">&ldquo;It says in use&rdquo; · &ldquo;I do not know the rate&rdquo;</td></tr>
     <tr><td class="strong mono">cat_build · cat_parse</td><td>Kenwood/Elecraft/Yaesu ';' commands: build a frequency set, decode ID, FA, MD, IF and error replies.</td><td class="get">Any text-CAT rig</td></tr>
     <tr><td class="strong mono">civ_build · civ_parse · civ_freq</td><td>Icom CI-V frames: build, decode (echo vs reply, BCD frequency, mode, PTT), convert.</td><td class="get">Any Icom</td></tr>
     <tr><td class="strong mono">rotator_build · rotator_parse</td><td>GS-232 commands (read, move, stop, speed) and position replies.</td><td class="get">Any Yaesu-protocol rotator</td></tr>
@@ -181,12 +181,12 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
 <!-- ============ C · FIRST SESSION ============ -->
 <div class="chapter" id="first">
   <div class="eyebrow">Chapter C · Before you start</div>
-  <h2>Your First Session — a Console by Conversation</h2>
+  <h2>Your First Session: a Console by Conversation</h2>
   <div class="h2rule"></div>
   <p class="lead">You do not need to know a terminal program. If you can plug in a cable and
   describe your gear, you can operate it.</p>
 
-  <h3>What you're actually installing</h3>
+  <h3>What you are installing</h3>
   <p><b>Claude</b> is an assistant made by Anthropic, running in the Claude Desktop app.
   <b>serial-console-mcp</b> is best thought of as a rig-interface cable with a very patient
   operator on the other end: Claude types what you ask into the port, watches what comes back,
@@ -307,11 +307,11 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <span class="mono">icom-civ</span>, <span class="mono">xiegu-civ</span>,
   <span class="mono">yaesu-rotator</span>, <span class="mono">arduino</span>,
   <span class="mono">nmea-gps</span>, <span class="mono">screen-console</span>. Presets also choose
-  the <b>terminal mode</b> (chapter 05): the console presets strip colours and escape sequences,
+  the <b>terminal mode</b> (chapter 05): the console presets strip colors and escape sequences,
   the radio presets pass raw bytes. Ask
   <i>&ldquo;list the presets&rdquo;</i> to see each one's values and caveats. They are factory
   defaults; the device's menu wins.</p>
-  <p>Don't know the rate at all? <i>&ldquo;What baud is this thing?&rdquo;</i> runs
+  <p>No idea of the rate at all? <i>&ldquo;What baud is this thing?&rdquo;</i> runs
   <code>detect_baud</code>: it tries the common rates, sends a return (or a command you name, such
   as <span class="mono">ID;</span> for a Kenwood), and ranks the rates by how readable the reply
   is.</p>
@@ -335,7 +335,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   shows what is remembered when nothing is open.</p>
   <div class="callout">
     <div class="ct">Line ending is a send setting, not a port setting</div>
-    <p>The dialog doesn't ask because a terminal sends whatever you type. Here it matters:
+    <p>The dialog does not ask because a terminal sends whatever you type. Here it matters:
     <code>send_text</code> appends <b>CR</b> (most radios, rotators), <b>LF</b> (Unix-style
     consoles, Arduino), <b>CRLF</b>, or <b>nothing</b> (Kenwood-style CAT ends in
     <span class="mono">;</span>). Say <i>&ldquo;this device wants LF&rdquo;</i> once: it is stored
@@ -378,12 +378,12 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
       return first to draw a fresh prompt; if that also produces nothing, check the cable.</div></div>
     <div class="item"><div class="no">6</div><div class="bd"><b>Disconnect before handing the port to anything else.</b>
       The OS gives a port to one process. A forgotten open port is the most common reason
-      WSJT-X or a terminal program &ldquo;can't find&rdquo; a device that is plainly plugged in.</div></div>
+      WSJT-X or a terminal program &ldquo;cannot find&rdquo; a device that is plainly plugged in.</div></div>
   </div>
   <div class="callout">
     <div class="ct">Where the rules come from</div>
     <p>They are the reasons <code>minicom</code> and <code>expect</code> exist. The server
-    implements them so the agent doesn't have to rediscover them at your bench.</p>
+    implements them so the agent does not have to rediscover them at your bench.</p>
   </div>
 </div>
 
@@ -401,7 +401,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
         <td class="mono">9600 8N1</td><td class="mono">LF or CR</td><td class="mono">read_until_prompt<br>&ldquo;login: &rdquo; · &ldquo;&gt; &rdquo; · &ldquo;# &rdquo;</td>
         <td>Send a bare return to draw a prompt. Turn off paging once (<span class="mono">set cli screen-length 0</span>, <span class="mono">terminal length 0</span>) or <span class="mono">--More--</span> becomes your prompt.</td></tr>
     <tr><td class="strong">Text CAT radios<br><span class="mono">Kenwood · Elecraft · Yaesu (FT-991, FTdx) · Flex</span></td>
-        <td class="mono">4800 – 115200 8N1<br>per the rig's menu</td><td class="mono">NONE</td><td class="mono">query_text<br>(empty prompt, idle read)</td>
+        <td class="mono">4800 to 115200 8N1<br>per the rig's menu</td><td class="mono">NONE</td><td class="mono">query_text<br>(empty prompt, idle read)</td>
         <td>Commands end in <span class="mono">;</span> with no CR: <span class="mono">ID;</span> <span class="mono">FA;</span> <span class="mono">MD;</span>. Replies are one line ending in <span class="mono">;</span>. <span class="mono">cat_build</span> formats a frequency set, <span class="mono">cat_parse</span> names the rig, mode and frequency. Elecraft echoes nothing; Kenwood may need <span class="mono">AI0;</span> to stop auto-info.</td></tr>
     <tr><td class="strong">Icom CI-V<br><span class="mono">IC-7300 · 7610 · 705 · 9700</span></td>
         <td class="mono">19200 8N1 (USB)<br>9600 via CI-V jack</td><td class="mono">n/a (binary)</td><td class="mono">send_hex →<br>read_available</td>
@@ -411,12 +411,12 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
         <td>GS-232 <span class="mono">C</span> returns <span class="mono">+0xxx</span> azimuth; <span class="mono">rotator_build</span> and <span class="mono">rotator_parse</span> cover read, move, stop and speed. Opening a port resets many Arduinos via DTR; wait a second and expect a boot banner. Sketches that print continuously are a <span class="mono">read_available</span> job.</td></tr>
     <tr style="break-inside: avoid; page-break-inside: avoid"><td class="strong">Everything else on a serial port<br><span class="mono">IoT gateways · alarm and access-control panels · UPS and PDU menus · lab instruments · industrial controllers</span></td>
         <td class="mono">9600 8N1 to start<br>detect_baud if silent</td><td class="mono">CR or CRLF<br>(try both)</td><td class="mono">read_until_prompt<br>read_available<br>screen</td>
-        <td>Choose the terminal mode by what the device prints: plain text or binary, <span class="mono">dumb</span>; colours and cursor codes, <span class="mono">ansi</span>; a full-screen menu that repaints, <span class="mono">xterm</span> with <span class="mono">screen</span>. Binary protocols such as Modbus RTU go through <span class="mono">send_hex</span> and <span class="mono">read_available</span>; the server does not decode them. Panels that can arm, disarm, unlock or switch power: start in read-only mode and confirm every command.</td></tr>
+        <td>Choose the terminal mode by what the device prints: plain text or binary, <span class="mono">dumb</span>; colors and cursor codes, <span class="mono">ansi</span>; a full-screen menu that repaints, <span class="mono">xterm</span> with <span class="mono">screen</span>. Binary protocols such as Modbus RTU go through <span class="mono">send_hex</span> and <span class="mono">read_available</span>; the server does not decode them. Panels that can arm, disarm, unlock or switch power: start in read-only mode and confirm every command.</td></tr>
   </table>
   <div class="callout warn">
     <div class="ct">Transmit-capable gear</div>
     <p>A CAT command can key the radio (<span class="mono">TX;</span>) and a console command can
-    reboot a router. The server doesn't filter; the approval prompt is your filter. On a rig,
+    reboot a router. The server does not filter; the approval prompt is your filter. On a rig,
     start with reads (<span class="mono">ID; FA; MD;</span>) and put the radio on a dummy load
     before any command that could transmit.</p>
   </div>
@@ -511,7 +511,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <table>
     <tr><th style="width:14%">Mode</th><th style="width:40%">What the agent sees</th><th>Use it for</th></tr>
     <tr><td class="strong mono">dumb</td><td>The bytes exactly as received. The default.</td><td>CAT, CI-V, rotators, GPS, Arduino, IoT gateways and sensors, binary protocols, and most CLIs</td></tr>
-    <tr><td class="strong mono">ansi</td><td>Colour and escape sequences stripped as they arrive; a bare carriage return overwrites the line, backspace moves left, erase-line and cursor moves are honoured. A progress bar reads as its final state, a coloured prompt as plain text, and <span class="mono">read_until_prompt</span> matches through the colour codes.</td><td>Linux shells, coloured router prompts, embedded and IoT consoles, anything that prints <span class="mono">ESC[32m</span> noise. The console presets set it.</td></tr>
+    <tr><td class="strong mono">ansi</td><td>Color and escape sequences stripped as they arrive; a bare carriage return overwrites the line, backspace moves left, erase-line and cursor moves are honored. A progress bar reads as its final state, a colored prompt as plain text, and <span class="mono">read_until_prompt</span> matches through the color codes.</td><td>Linux shells, colored router prompts, embedded and IoT consoles, anything that prints <span class="mono">ESC[32m</span> noise. The console presets set it.</td></tr>
     <tr><td class="strong mono">xterm · vt100</td><td>All of the above plus a real character grid, 80×24 unless you say otherwise, updated continuously. The <span class="mono">screen</span> tool returns the grid as rows of text with the cursor position, and the terminal answers &ldquo;who are you&rdquo; queries as a VT100 so full-screen programs behave.</td><td>BIOS setup over a serial console, RAID and BMC consoles, menu-driven switches (older ProCurve, Netgear), alarm and control panel menus, UPS and PDU setup screens, <span class="mono">vi</span>, <span class="mono">top</span>. The <span class="mono">screen-console</span> preset.</td></tr>
   </table>
   <p>Choose the mode on <span class="mono">connect(terminal=…)</span> or let the preset. The raw
@@ -546,7 +546,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <span class="mono">backspace</span>, <span class="mono">delete</span>, <span class="mono">up</span>
   <span class="mono">down</span> <span class="mono">left</span> <span class="mono">right</span>,
   <span class="mono">home</span> <span class="mono">end</span> <span class="mono">pgup</span>
-  <span class="mono">pgdn</span>, <span class="mono">f1</span>–<span class="mono">f12</span>, a single
+  <span class="mono">pgdn</span>, <span class="mono">f1</span> to <span class="mono">f12</span>, a single
   character, or <span class="mono">text:…</span> for a literal run. They are encoded the way an
   xterm sends them, which is what every current device expects. Nothing is read; look at the
   reply with <span class="mono">read_until_prompt</span>, <span class="mono">read_available</span>
@@ -555,7 +555,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <div class="ct">The full-screen loop</div>
     <p>Connect with the <span class="mono">screen-console</span> preset, then alternate: press a
     key, read the screen, decide, press the next. Read the screen after <b>every</b> keypress; a
-    menu that didn't move is the most common way an agent gets lost in a BIOS. The skill says
+    menu that did not move is the most common way an agent gets lost in a BIOS. The skill says
     the same thing to the agent.</p>
   </div>
   <div class="callout warn">
@@ -670,9 +670,9 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   as on a local port.</p>
   <table>
     <tr><th style="width:14%">Transport</th><th style="width:30%">For</th><th style="width:24%">BREAK · DTR/RTS · baud</th><th>How to say it</th></tr>
-    <tr><td class="strong mono">ssh</td><td>The device's own SSH: a router or switch, a BMC, a bench Pi; a console server's per-port SSH</td><td>BREAK sent (break request) · no lines · no baud</td><td>&ldquo;SSH to the MX at 192.0.2.1 as admin, I'll type the password&rdquo;</td></tr>
+    <tr><td class="strong mono">ssh</td><td>The device's own SSH: a router or switch, a BMC, a bench Pi; a console server's per-port SSH</td><td>BREAK sent (break request) · no lines · no baud</td><td>&ldquo;SSH to the MX at 192.0.2.1 as admin, I will type the password&rdquo;</td></tr>
     <tr><td class="strong mono">telnet</td><td>The device's own telnet; reverse-telnet ports on Opengear, Cisco, Lantronix, Digi, Avocent; ser2net telnet ports</td><td>BREAK sent (IAC BRK) · no lines · no baud</td><td>&ldquo;Telnet to cs1 port 2003&rdquo;</td></tr>
-    <tr><td class="strong mono">rfc2217</td><td>ser2net and device servers with RFC 2217 COM-port control</td><td>All three, set from here</td><td>&ldquo;Connect to rfc2217://ser2net:3001 at 115200&rdquo;</td></tr>
+    <tr><td class="strong mono">rfc2217</td><td>ser2net and device servers with RFC 2217 COM-port control</td><td>All three, set from Claude</td><td>&ldquo;Connect to rfc2217://ser2net:3001 at 115200&rdquo;</td></tr>
     <tr><td class="strong mono">tcp</td><td>Raw TCP: ser2net raw ports, simple device servers</td><td>Bytes only</td><td>&ldquo;Raw TCP to 10.0.0.5 port 4001&rdquo;</td></tr>
   </table>
   <p>Give the transport and host, or one address: <span class="mono">ssh://admin@mx1</span>,
@@ -696,8 +696,8 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   <ul class="tight">
     <li><b>~/.ssh/config is read.</b> Host aliases, HostName, User, Port, IdentityFile and
         ProxyJump work the way they do for the <span class="mono">ssh</span> command.</li>
-    <li><b>Keys come from the SSH agent and your key files.</b> Nothing is copied anywhere.</li>
-    <li><b>Only you trust a new host key.</b> A key that differs from the one in
+    <li><b>Keys come from the SSH agent and your key files.</b> Your keys are not copied anywhere.</li>
+    <li><b>Only you approve a new host key.</b> A key that differs from the one in
         <span class="mono">~/.ssh/known_hosts</span> is always refused before anything is sent.
         A device seen for the first time is trusted either by running
         <span class="mono">ssh host</span> once in a terminal, or in the dialog described below,
@@ -706,43 +706,43 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
   </ul>
 
   <h3>User name and password, typed by you</h3>
-  <p>Ad-hoc devices usually want a user name and password. Tell the agent the user name if you
-  like (it isn't secret), and say you will type the password: <i>&ldquo;SSH to 192.0.2.1 as
-  admin, I'll type the password.&rdquo;</i> The agent connects with
+  <p>Ad-hoc devices usually want a user name and password. Tell Claude the user name if you
+  like (it is not secret), and say you will type the password: <i>&ldquo;SSH to 192.0.2.1 as
+  admin, I will type the password.&rdquo;</i> Claude connects with
   <span class="mono">ask=True</span>, and a dialog on your own screen asks for the password,
-  and for the user name if none is known. What you type goes straight to the server process.
-  It is used for this connection only, and it is never returned to the agent, saved or
+  and for the user name if none is known. What you type goes straight to serial-console-mcp.
+  It is used for this connection only, and it is never returned to Claude, saved or
   written to a capture. Over SSH your keys are tried first, so the dialog appears only when
   they are refused. On first contact a dialog shows the host key fingerprint before anything
-  else happens. Over telnet the server answers the device's <span class="mono">login:</span>
-  and <span class="mono">Password:</span> prompts from the dialog. A login prompt later in a
+  else happens. Over telnet serial-console-mcp answers the device's <span class="mono">login:</span>
+  and <span class="mono">Password:</span> prompts with what you typed. A login prompt later in a
   session, such as a craft port's <span class="mono">login:</span>, uses the
-  <code>expect</code> step <span class="mono">{"ask_password": true}</span>. The dialogs work
-  on macOS, on Windows, and on Linux with zenity or kdialog.
-  <code>reconnect_last</code> asks again; it remembers the user name, never the password.</p>
+  <code>expect</code> step <span class="mono">{"ask_password": true}</span>. The dialogs are
+  built for macOS, Windows, and Linux with zenity or kdialog, and so far tested on macOS.
+  <code>reconnect_last</code> asks again, because it keeps the user name but never the password.</p>
 
   <h3>Passwords by name, for the devices you use every day</h3>
   <p>For a console server or device you use every day, store the password once, in a terminal:</p>
   <pre>serial-console-mcp credential set bench-opengear --username admin</pre>
   <p>You are prompted for the password; it goes to <span class="mono">credentials.json</span>
-  beside the remembered connections, readable only by you (mode 600). Add
+  next to your saved connections, readable only by you (mode 600). Add
   <span class="mono">--keychain</span> to keep it in the macOS Keychain instead. Then say
-  <i>&ldquo;telnet to cs1 port 2003 with the bench-opengear credential&rdquo;</i>: the server
-  answers the console server's <span class="mono">login:</span> and
+  <i>&ldquo;telnet to cs1 port 2003 with the bench-opengear credential&rdquo;</i>, and
+  serial-console-mcp answers the console server's <span class="mono">login:</span> and
   <span class="mono">Password:</span> prompts right after connecting, or offers the password to
   SSH. A device's own login further in uses <span class="mono">send_credential</span> in
-  <code>expect</code>. The agent never sees the password, and captures record only
+  <code>expect</code>. Claude never sees the password, and captures record only
   <span class="mono">&lt;credential hidden&gt;</span>. <code>reconnect_last</code> remembers the
   host, port, user name and credential name, nothing secret. If you prefer, set
   <span class="mono">SERIAL_CONSOLE_PASSWORD_BENCH_OPENGEAR</span> (and
-  <span class="mono">SERIAL_CONSOLE_USERNAME_BENCH_OPENGEAR</span>) in the server's environment
-  instead; they are checked first. Anyone who can read that config can read the password.</p>
+  <span class="mono">SERIAL_CONSOLE_USERNAME_BENCH_OPENGEAR</span>) in your MCP client config
+  instead; they are checked before the file. Anyone who can read that config can read them.</p>
 
   <div class="callout">
     <div class="ct">Fence the network in</div>
     <p><code>SERIAL_CONSOLE_NETWORK_HOSTS</code> (the connector's &ldquo;network consoles
     allowed&rdquo; setting) limits which hosts the server may reach, for example
-    <span class="mono">10.20.0.0/16, *.bench.lan</span>. Empty allows any host;
+    <span class="mono">10.20.0.0/16, *.bench.lan</span>. Empty, the default, allows any host;
     <span class="mono">none</span> turns network consoles off.</p>
   </div>
 </div>
@@ -775,7 +775,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <div class="qbody">
       <div class="xline note"><span class="dir"></span><span class="txt">You: &ldquo;Connect to the Kenwood at 38400 as rig and tell me what it is and where it's tuned.&rdquo;</span></div>
       <div class="xline tx"><span class="dir">TOOL</span><span class="txt">connect(port="/dev/cu.usbserial-1420", preset="kenwood-cat", name="rig", baud=38400)  → … Line ending NONE, prompt ';'</span></div>
-      <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text("ID;")   ← no line ending, reads until ';' — both from the preset</span></div>
+      <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text("ID;")   ← no line ending, reads until ';', both from the preset</span></div>
       <div class="xline rx"><span class="dir">READ</span><span class="txt">Matched prompt ';' after 6 bytes: ID021;</span></div>
       <div class="xline tx"><span class="dir">SEND</span><span class="txt">query_text("FA;")</span></div>
       <div class="xline rx"><span class="dir">READ</span><span class="txt">Matched prompt ';' after 14 bytes: FA00014074000;</span></div>
@@ -797,7 +797,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
       <div class="xline rx"><span class="dir">READ</span><span class="txt">Frame 1: … → read operating frequency (echo of our own command; the rig's reply follows)\nFrame 2: to E0 from 94 cmd 03 data [00 00 07 14 00] → read operating frequency: 14.070000 MHz</span></div>
       <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;The IC-7300 is on 14.070000 MHz.&rdquo; To QSY: civ_freq(mhz=14.074) gives the data bytes for civ_build("05", …).</span></div>
     </div>
-    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;Binary protocol, so the hex view is the answer and civ_parse does the BCD arithmetic; the rig's USB interface echoes, and the parser labels the echo so it isn't mistaken for a reply. XON/XOFF stayed off, so no byte of the binary frame could be mistaken for flow control.</div>
+    <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;Binary protocol, so the hex view is the answer and civ_parse does the BCD arithmetic; the rig's USB interface echoes, and the parser labels the echo so it is not mistaken for a reply. XON/XOFF stayed off, so no byte of the binary frame could be mistaken for flow control.</div>
   </div>
 
   <div class="qso">
@@ -822,7 +822,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
       <div class="xline tx"><span class="dir">SEND</span><span class="txt">send_text(rotator_build("move", azimuth=45)) → "M045"+CR (moves reply nothing)</span></div>
       <div class="xline note"><span class="dir"></span><span class="txt">The agent waits, then re-reads the position until it stops changing.</span></div>
       <div class="xline rx"><span class="dir">READ</span><span class="txt">query_text("C") → +0045 → azimuth 45°</span></div>
-      <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;Beam is on 045. The rig connection is untouched; say the word and I'll read its frequency.&rdquo;</span></div>
+      <div class="xline note"><span class="dir"></span><span class="txt">Agent: &ldquo;Beam is on 045. The rig connection is untouched; say the word and I will read its frequency.&rdquo;</span></div>
     </div>
     <div class="verdict ok"><b>WHY IT WORKED</b> &nbsp;Two ports open at once, each with its own preset; the rotator's CR line ending and "\r" reply terminator came from the preset; a move is confirmed by reading, never assumed.</div>
   </div>
@@ -831,7 +831,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
 <!-- ============ F · TROUBLE ============ -->
 <div class="chapter" id="trouble">
   <div class="eyebrow">Chapter F · At the bench</div>
-  <h2>When It Doesn't Answer</h2>
+  <h2>When It Does Not Answer</h2>
   <div class="h2rule"></div>
   <p class="lead">Most silent ports come down to one of the causes below. The server's own messages
   point at many of them.</p>
@@ -839,24 +839,24 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><th style="width:30%">Symptom</th><th style="width:34%">Most likely cause</th><th>What to say</th></tr>
     <tr><td class="strong">No serial ports found</td><td>Charge-only USB cable, missing driver, device off. Windows: nothing under Ports (COM &amp; LPT).</td><td class="mono">Swap the cable, then &ldquo;list the ports again&rdquo;</td></tr>
     <tr><td class="strong">Could not open … already in use</td><td>Another program holds the port. On a Mac or Linux the message now names it (<span class="mono">port_in_use_by</span>).</td><td class="mono">Close it, then &ldquo;try connecting again&rdquo;</td></tr>
-    <tr><td class="strong">Port name wasn't found</td><td>Names change when you replug; the remembered port is stale.</td><td class="mono">&ldquo;List the ports and connect to the right one&rdquo;</td></tr>
+    <tr><td class="strong">Port name was not found</td><td>Names change when you replug; the remembered port is stale.</td><td class="mono">&ldquo;List the ports and connect to the right one&rdquo;</td></tr>
     <tr><td class="strong">Garbage characters, <span class="mono">�</span>, box drawing</td><td>Wrong baud rate. Occasionally wrong data bits or parity.</td><td class="mono">&ldquo;Detect the baud rate&rdquo; · &ldquo;reconnect at 115200&rdquo;</td></tr>
     <tr><td class="strong">Echo comes back, no reply</td><td>Wrong line ending for this device, or a CLI that needs a return to wake.</td><td class="mono">&ldquo;Send a return first&rdquo; · &ldquo;use LF instead of CR&rdquo;</td></tr>
-    <tr><td class="strong">Prompt not seen, partial output returned</td><td>The prompt string doesn't match: missing trailing space, hostname changed, or <span class="mono">--More--</span> paging.</td><td class="mono">&ldquo;The prompt is admin@r1&gt; with a space&rdquo; · &ldquo;answer --More-- with a space&rdquo;</td></tr>
-    <tr><td class="strong">Output full of <span class="mono">ESC[0m</span>, <span class="mono">[32m</span>, box-drawing junk on a shell</td><td>Colour and cursor escape sequences shown raw: the connection is in <span class="mono">dumb</span> mode.</td><td class="mono">&ldquo;Reconnect with terminal ansi&rdquo; (or a console preset)</td></tr>
-    <tr><td class="strong">A command won't stop; the prompt never returns</td><td>ping, monitor, a pager or a hung process is still running.</td><td class="mono">&ldquo;Press Ctrl-C&rdquo; · &ldquo;press q&rdquo;</td></tr>
-    <tr><td class="strong">Menu screen looks like scrambled fragments</td><td>A full-screen program is repainting with cursor addressing; line tools can't show it.</td><td class="mono">&ldquo;Reconnect as xterm and show me the screen&rdquo;</td></tr>
-    <tr><td class="strong">Read-only mode refused to send</td><td><span class="mono">SERIAL_CONSOLE_READ_ONLY</span> is set and the command isn't a read.</td><td class="mono">Unset it in the config entry, or widen SERIAL_CONSOLE_ALLOW</td></tr>
+    <tr><td class="strong">Prompt not seen, partial output returned</td><td>The prompt string does not match: missing trailing space, hostname changed, or <span class="mono">--More--</span> paging.</td><td class="mono">&ldquo;The prompt is admin@r1&gt; with a space&rdquo; · &ldquo;answer --More-- with a space&rdquo;</td></tr>
+    <tr><td class="strong">Output full of <span class="mono">ESC[0m</span>, <span class="mono">[32m</span>, box-drawing junk on a shell</td><td>Color and cursor escape sequences shown raw: the connection is in <span class="mono">dumb</span> mode.</td><td class="mono">&ldquo;Reconnect with terminal ansi&rdquo; (or a console preset)</td></tr>
+    <tr><td class="strong">A command does not stop; the prompt never returns</td><td>ping, monitor, a pager or a hung process is still running.</td><td class="mono">&ldquo;Press Ctrl-C&rdquo; · &ldquo;press q&rdquo;</td></tr>
+    <tr><td class="strong">Menu screen looks like scrambled fragments</td><td>A full-screen program is repainting with cursor addressing; line tools cannot show it.</td><td class="mono">&ldquo;Reconnect as xterm and show me the screen&rdquo;</td></tr>
+    <tr><td class="strong">Read-only mode refused to send</td><td><span class="mono">SERIAL_CONSOLE_READ_ONLY</span> is set and the command is not a read.</td><td class="mono">Unset it in the config entry, or widen SERIAL_CONSOLE_ALLOW</td></tr>
     <tr><td class="strong">Wrong device answered</td><td>Several ports open; the command went to the current one.</td><td class="mono">&ldquo;Send that to the rotator&rdquo; · &ldquo;what's the status?&rdquo;</td></tr>
-    <tr><td class="strong">Write failed: Write timeout</td><td>RTS/CTS is on and the cable doesn't carry CTS.</td><td class="mono">&ldquo;Reconnect without hardware flow control&rdquo;</td></tr>
+    <tr><td class="strong">Write failed: Write timeout</td><td>RTS/CTS is on and the cable does not carry CTS.</td><td class="mono">&ldquo;Reconnect without hardware flow control&rdquo;</td></tr>
     <tr><td class="strong">Background reader has stopped</td><td>Adapter unplugged or port taken by another program mid-session.</td><td class="mono">&ldquo;Disconnect and reconnect&rdquo;</td></tr>
     <tr><td class="strong">Refused: nothing is listening there</td><td>The device's telnet or SSH service is off (telnet often is by default), or a console server's TCP port for that line is wrong or disabled.</td><td class="mono">Enable the service, or check the console server's port map, then &ldquo;telnet to port 2005 instead&rdquo;</td></tr>
     <tr><td class="strong">SSH host key could not be verified</td><td>First connection to this host.</td><td class="mono">&ldquo;Connect again and let me check the fingerprint&rdquo; (ask), or <span class="mono">ssh host</span> once in a terminal</td></tr>
     <tr><td class="strong">Host key is NOT the one on record</td><td>The device was reinstalled, or something is in the way.</td><td class="mono">Find out which; only then <span class="mono">ssh-keygen -R host</span> yourself</td></tr>
-    <tr><td class="strong">SSH login refused</td><td>No key in the agent or ~/.ssh is accepted, or the device takes only a password.</td><td class="mono">&ldquo;I'll type the password&rdquo; (ask), add your key, or <span class="mono">credential set NAME</span></td></tr>
+    <tr><td class="strong">SSH login refused</td><td>No key in the agent or ~/.ssh is accepted, or the device takes only a password.</td><td class="mono">&ldquo;I will type the password&rdquo; (ask), add your key, or <span class="mono">credential set NAME</span></td></tr>
     <tr><td class="strong">No stored credential named …</td><td>The password was never stored, or under another name.</td><td class="mono"><span class="mono">serial-console-mcp credential set NAME</span> in a terminal</td></tr>
     <tr><td class="strong">The telnet/ssh connection has stopped</td><td>An idle timeout or logout on the device or console server, another user taking a console server port, a reboot or a network drop.</td><td class="mono">&ldquo;Reconnect to the last one&rdquo;</td></tr>
-    <tr><td class="strong">Claude says it has no serial tools</td><td>Claude Desktop wasn't fully quit after install, or the config entry is missing.</td><td class="mono">Quit with ⌘Q / tray Quit, reopen, new chat</td></tr>
+    <tr><td class="strong">Claude says it has no serial tools</td><td>Claude Desktop was not fully quit after install, or the config entry is missing.</td><td class="mono">Quit with ⌘Q / tray Quit, reopen, new chat</td></tr>
   </table>
   <div class="callout">
     <div class="ct">Two questions that sort most of it</div>
@@ -907,7 +907,7 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong mono">civ_parse</td><td class="mono">hex_bytes · controller [E0]</td><td>Each frame decoded: echo or reply, frequency, mode, OK/NG, PTT</td></tr>
     <tr><td class="strong mono">civ_freq</td><td class="mono">mhz | bcd_hex</td><td>The other representation</td></tr>
   </table>
-  <h3>Behaviour worth knowing</h3>
+  <h3>Behavior worth knowing</h3>
   <ul class="tight">
     <li><b>Non-ASCII text</b> in <code>send_text</code> is sent as <span class="mono">?</span>; use <code>send_hex</code> for raw bytes.</li>
     <li><b>Display decoding</b> is UTF-8 with replacement characters; prompt matching is byte-exact, so binary noise before a prompt does not shift the match.</li>
@@ -951,10 +951,10 @@ serial-console-mcp configure --command "$(which serial-console-mcp)"</pre>
     <tr><td class="strong">This guide's sources</td><td class="mono">docs/brand/ (HTML + CSS, WeasyPrint)</td></tr>
     <tr><td class="strong">Sibling servers</td><td class="mono">fldigi-mcp · wsjtx-mcp · n3fjp-mcp · mcp-host-bridge</td></tr>
   </table>
-  <p>Corrections and additions are welcome — open an issue on the repository.</p>
+  <p>Corrections and additions are welcome: open an issue on the repository.</p>
   <div class="callout">
     <div class="ct">73</div>
-    <p>This is private, personal work by Stefan Brunner, AE5VG — built for amateur radio
+    <p>This is private, personal work by Stefan Brunner, AE5VG, built for amateur radio
     operators and anyone else with a console cable. Not affiliated with any equipment vendor or
     any employer. Free for hobbyists; commercial use needs a license (chapter I). GL es 73 de AE5VG sk.</p>
   </div>

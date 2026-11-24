@@ -126,13 +126,13 @@ def _text(message: str, hidden: bool, default: str = "") -> str | None:
 
 
 def password(message: str) -> str | None:
-    """Hidden text box. None if the user cancelled or let it time out."""
+    """Hidden text box. None if the user canceled or let it time out."""
     pw = _text(message, hidden=True)
     return pw or None
 
 
 def text(message: str, default: str = "") -> str | None:
-    """Plain text box (a user name). None if cancelled."""
+    """Plain text box (a user name). None if canceled."""
     out = _text(message, hidden=False, default=default)
     if out is None:
         return None

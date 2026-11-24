@@ -863,8 +863,8 @@ def _open_serial(port, baud, bytesize, parity, stopbits, rtscts, xonxoff):
         # trip the "in use" hint below.
         if "filenotfound" in low or "no such" in low or "errno 2]" in low:
             hint = (
-                "\nThat port name wasn't found. Run list_serial_ports to see the "
-                "exact current names — they can change when you replug the cable."
+                "\nThat port name was not found. Run list_serial_ports to see the "
+                "exact current names; they can change when you replug the cable."
             )
         elif "could not open" in low or "access" in low or "denied" in low or "busy" in low:
             holder = _port_holder(port)
@@ -918,7 +918,7 @@ class _AskedCredential:
     def ask_username(self, default: str = "") -> str:
         u = ask_module.text(f"User name for {self.what}:", default=default)
         if not u:
-            raise _AskCancelled("the user-name dialog was cancelled")
+            raise _AskCancelled("the user-name dialog was canceled")
         self.username = u
         return u
 
@@ -930,7 +930,7 @@ class _AskedCredential:
                 f"Password for {who}{self.what}.\n\nIt goes to serial-console-mcp only, "
                 f"for this connection, and is not shown to the assistant.")
             if pw is None:
-                raise _AskCancelled("the password dialog was cancelled")
+                raise _AskCancelled("the password dialog was canceled")
             self._pw = pw
         return self._pw
 
@@ -1210,8 +1210,8 @@ def connect(
         prompt_regex: Treat `prompt` as a regular expression.
         terminal: How to interpret what the device sends. "dumb" (default):
             raw bytes, right for CAT, CI-V, rotators and most CLIs. "ansi":
-            strip colour/escape sequences and apply CR/backspace overwrites so
-            shells and coloured prompts read cleanly (the console presets use
+            strip color/escape sequences and apply CR/backspace overwrites so
+            shells and colored prompts read cleanly (the console presets use
             it); prompts are also matched on the last line as displayed, so a
             line redrawn with spaces and backspaces (Junos after ? or
             Ctrl-U) still ends in its prompt. "vt100"/"xterm": additionally keep a real screen for

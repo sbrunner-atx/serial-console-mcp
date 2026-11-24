@@ -120,7 +120,7 @@ def test_ask_telnet_cancelled_sends_nothing(telnet_login, monkeypatch):
     FakeAsk(password="", text="admin").install(monkeypatch)
     out = m.connect(transport="telnet", host="127.0.0.1", tcp_port=telnet_login.port,
                     ask=True)
-    assert "password dialog was cancelled; nothing more was sent" in out, out
+    assert "password dialog was canceled; nothing more was sent" in out, out
     assert telnet_login.login_attempts == []
 
 
@@ -261,5 +261,5 @@ def test_expect_ask_password_cancelled(telnet_login, monkeypatch):
     out = m.expect([m.ExpectStep(expect="login: "),
                     m.ExpectStep(send="admin", expect="Password: "),
                     m.ExpectStep(ask_password=True, expect="switch> ")])
-    assert "cancelled; nothing sent, stopped" in out, out
+    assert "canceled; nothing sent, stopped" in out, out
     assert telnet_login.login_attempts == []

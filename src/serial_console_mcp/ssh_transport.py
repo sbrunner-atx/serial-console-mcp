@@ -356,7 +356,7 @@ _PREFERRED_HOST_KEYS = ["ssh-ed25519", "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp3
 
 def host_key_check(host: str, port: int | None = None, timeout: float = 15.0) -> HostKeyCheck:
     """Fetch the server's host key (no login is attempted) and say whether any
-    key is on record for it. Raises SSHSetupError if the server can't be reached."""
+    key is on record for it. Raises SSHSetupError if the server cannot be reached."""
     if asyncssh is None:
         raise SSHSetupError("SSH needs the optional asyncssh package.")
     cfg = _ssh_g(host, port)
