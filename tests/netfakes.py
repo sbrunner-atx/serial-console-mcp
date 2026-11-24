@@ -21,7 +21,7 @@ import socket
 import threading
 import time
 
-IAC, DONT, DO, WONT, WILL, SB, SE, BRK = 255, 254, 253, 252, 251, 250, 240, 243
+IAC, DONT, DO, WONT, WILL, SB, SE, BRK, DM = 255, 254, 253, 252, 251, 250, 240, 243, 242
 BINARY, ECHO, SGA, TTYPE, NAWS, COM_PORT = 0, 1, 3, 24, 31, 44
 
 
@@ -75,8 +75,9 @@ class _Listener:
 
 class FakeTelnetServer(_Listener):
     def __init__(self, login: tuple[str, str] | None = None, binary_ok: bool = True,
-                 prompt: bytes = b"switch> "):
+                 prompt: bytes = b"switch> ", synch: bool = False):
         self.login, self.binary_ok, self.prompt = login, binary_ok, prompt
+        self.synch = synch  # send IAC DM as TCP urgent data before login, like inetutils
         self.received = bytearray()      # data bytes after IAC decoding
         self.raw = bytearray()           # exactly what came over the wire
         self.commands: list[tuple[int, int]] = []
@@ -97,7 +98,12 @@ class FakeTelnetServer(_Listener):
         logged_in = self.login is None
         user = None
         if not logged_in:
-            c.sendall(b"\r\nOpengear-ish console server\r\nlogin: ")
+            c.sendall(b"\r\nOpengear-ish console server\r\n")
+            if self.synch:
+                time.sleep(0.05)
+                c.send(bytes([IAC, DM]), socket.MSG_OOB)
+                time.sleep(0.05)
+            c.sendall(b"login: ")
         else:
             c.sendall(b"\r\nConnected to port 5\r\n")
         while True:

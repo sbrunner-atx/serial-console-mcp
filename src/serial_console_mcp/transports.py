@@ -101,6 +101,13 @@ class TcpTransport:
             self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         except OSError:
             pass
+        # Keep TCP urgent data in the stream. A telnet "Synch" (IAC DM sent as
+        # urgent data, which inetutils telnetd sends before `login:`) otherwise
+        # loses a byte to the out-of-band channel, and the DM shows up as text.
+        try:
+            self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_OOBINLINE, 1)
+        except (OSError, AttributeError):
+            pass
         self._sock.settimeout(_WRITE_TIMEOUT)
         self._pending = bytearray()
         self._wlock = threading.Lock()

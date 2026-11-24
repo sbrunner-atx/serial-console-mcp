@@ -18,8 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     address, a Linux box), console servers' reverse-telnet ports (Opengear,
     Cisco, Lantronix, Digi, Avocent) and ser2net. Negotiates BINARY, SGA, ECHO,
     terminal type and window size and refuses other options; IAC is escaped
-    both ways and a CR is sent as CR NUL in NVT mode. `send_break` sends
-    IAC BRK.
+    both ways and a CR is sent as CR NUL in NVT mode. TCP urgent data stays in
+    the stream, so a telnet Synch (inetutils telnetd sends one before
+    `login:`) leaves no stray bytes. `send_break` sends IAC BRK.
   - **rfc2217**: RFC 2217 COM-port control through pyserial, so baud,
     framing, DTR/RTS and BREAK reach the remote serial port.
   - **ssh**: a device's own SSH (router, switch, BMC, a bench Pi) or a

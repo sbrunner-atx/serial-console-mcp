@@ -1120,9 +1120,9 @@ def _console_login_inner(conn: Connection, username: str, cred) -> str:
             return f"Console login: {err}"
         sent_user = True
     shown = _render(bytes(seen), conn).strip()
-    who = f"user {username!r}, " if sent_user else ""
-    label = getattr(cred, "label", f"credential {cred.name!r}")
-    sent = f"sent {who}password from {label} (hidden)" if sent_pw else (
+    who = f"user {username!r} and " if sent_user else ""
+    label = getattr(cred, "label", f"the password from credential {cred.name!r}")
+    sent = f"sent {who}{label} (hidden)" if sent_pw else (
         f"sent {who}no password")
     tail = f"\nLogin dialogue:\n{shown[-600:]}" if shown else ""
     with conn.lock:

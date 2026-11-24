@@ -339,6 +339,21 @@ def test_telnet_console_login_with_credential(tmp_path):
         srv.close()
 
 
+def test_telnet_synch_before_login_leaves_no_stray_bytes(tmp_path):
+    """inetutils telnetd sends IAC DM as urgent data before `login:`; no byte of it
+    may turn up as text (seen live as two 0xF2 bytes before the prompt)."""
+    srv = FakeTelnetServer(login=("admin", "pw"), synch=True)
+    try:
+        _store(tmp_path, "pi", "pw", username="admin")
+        out = _ok(m.connect(transport="telnet", host="127.0.0.1", tcp_port=srv.port,
+                            credential="pi", prompt="switch> "))
+        assert "Console login: logged in" in out, out
+        assert "\ufffd" not in out and "\xf2" not in out, out
+        assert "console server\nlogin: \nPassword:" in out.replace("\r", ""), out
+    finally:
+        srv.close()
+
+
 def test_telnet_console_login_wrong_password(tmp_path):
     srv = FakeTelnetServer(login=("admin", "right"))
     try:
