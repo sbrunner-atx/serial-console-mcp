@@ -4,7 +4,7 @@
 
 Project page: [ae5vg.com/products/serial-console-mcp](https://ae5vg.com/products/serial-console-mcp.html)
 
-**AI for the configuration of telecommunication equipment, through the console port it already has.**
+**AI for the configuration of telecommunication equipment, through its console: over a serial cable, telnet or SSH.**
 
 [![build](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/sbrunner-atx/serial-console-mcp/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/serial-console-mcp?label=pypi&cacheSeconds=3600)](https://pypi.org/project/serial-console-mcp/)
@@ -17,9 +17,9 @@ Project page: [ae5vg.com/products/serial-console-mcp](https://ae5vg.com/products
 > license. Licenses, support for more devices, custom skills and support plans:
 > see [COMMERCIAL.md](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/COMMERCIAL.md).
 
-serial-console-mcp connects an AI assistant such as Claude to the serial console
-of the equipment that runs networks and radio stations, and of anything else
-with a serial port:
+serial-console-mcp connects an AI assistant such as Claude to the console of
+the equipment that runs networks and radio stations, over a serial cable,
+telnet or SSH, and to anything else with a serial port or a network login:
 
 - **Routers and switches.** Juniper (Junos) and Cisco (IOS, IOS-XE) console and
   craft ports: log in, read state, change configuration with a safety net
