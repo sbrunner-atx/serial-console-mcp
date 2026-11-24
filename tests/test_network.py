@@ -354,6 +354,20 @@ def test_telnet_synch_before_login_leaves_no_stray_bytes(tmp_path):
         srv.close()
 
 
+def test_telnet_console_login_in_nvt_mode(tmp_path):
+    """No BINARY: every line ends in CR NUL, and the NUL must not reach the next
+    line (it made CI fail at random, depending on when BINARY was agreed)."""
+    srv = FakeTelnetServer(login=("admin", "pw1"), binary_ok=False)
+    try:
+        _store(tmp_path, "nvt", "pw1", username="admin")
+        out = _ok(m.connect(transport="telnet", host="127.0.0.1", tcp_port=srv.port,
+                            credential="nvt", prompt="switch> "))
+        assert "NVT text mode" in out and "Console login: logged in" in out, out
+        assert srv.login_attempts == [(b"admin", b"pw1")]
+    finally:
+        srv.close()
+
+
 def test_telnet_console_login_wrong_password(tmp_path):
     srv = FakeTelnetServer(login=("admin", "right"))
     try:
@@ -495,8 +509,9 @@ def sshd(tmp_path, monkeypatch):
     kh = tmp_path / "known_hosts"
     kh.write_text(srv.known_hosts_line())
     cfg = tmp_path / "ssh_config"
+    # Forward slashes: the config parser reads a backslash as an escape (Windows paths).
     cfg.write_text(f"Host benchpi\n  HostName 127.0.0.1\n  Port {srv.port}\n  User tester\n"
-                   f"  IdentityFile {srv.client_key_path}\n")
+                   f"  IdentityFile {srv.client_key_path.as_posix()}\n")
     monkeypatch.setattr(ssh_transport, "KNOWN_HOSTS", str(kh))
     monkeypatch.setattr(ssh_transport, "CONFIG_PATHS", [str(cfg)])
     monkeypatch.setattr(ssh_transport, "CLIENT_KEYS", [str(srv.client_key_path)])

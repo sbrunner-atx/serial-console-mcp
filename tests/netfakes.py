@@ -95,6 +95,7 @@ class FakeTelnetServer(_Listener):
         c.sendall(bytes([IAC, WILL, ECHO, IAC, WILL, SGA, IAC, DO, TTYPE, IAC, DO, NAWS,
                          IAC, DO, COM_PORT]))
         state, cmd, sb, line = "data", 0, bytearray(), bytearray()
+        after_cr = False  # the previous data byte was CR (it survives line.clear())
         logged_in = self.login is None
         user = None
         if not logged_in:
@@ -116,15 +117,19 @@ class FakeTelnetServer(_Listener):
                     if b == IAC:
                         state = "iac"
                         continue
-                    if b == 0 and line[-1:] == b"\r":
-                        continue  # CR NUL
+                    was_cr, after_cr = after_cr, b == 13
+                    if b == 0 and was_cr:
+                        continue  # CR NUL: NVT end of line
                     self.received.append(b)
-                    if b == 10 and line[-1:] == b"\r":
+                    if b == 10 and was_cr:
                         continue  # CR LF: the CR already ended the line
                     if b in (13, 10):
                         text = bytes(line)
                         line.clear()
                         if not logged_in:
+                            if user is None and not text:
+                                c.sendall(b"\r\nlogin: ")  # like getty: ask again
+                                continue
                             if user is None:
                                 user = text
                                 c.sendall(b"\r\nPassword: ")
