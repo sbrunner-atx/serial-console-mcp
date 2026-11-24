@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-23
+
 ### Added
 - **Network consoles.** `connect` takes `transport` (`serial` by default,
   `telnet`, `ssh`, `tcp`, `rfc2217`) with `host` and `tcp_port`, or a URL such

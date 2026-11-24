@@ -360,7 +360,7 @@ real terminal handy for anything you would not want an assistant to type.
 ## License
 
 [PolyForm Noncommercial License 1.0.0](https://github.com/sbrunner-atx/serial-console-mcp/blob/main/LICENSE),
-starting with the first release after 0.3.3.
+starting with release 0.4.0.
 
 - **Free** for personal use, hobby projects, amateur radio, education, and
   charitable, public research, public safety and government organizations.

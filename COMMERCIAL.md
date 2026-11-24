@@ -2,7 +2,7 @@
 
 serial-console-mcp is free for hobbyists. Commercial use needs a license.
 
-Starting with the first release after 0.3.3, serial-console-mcp is licensed under the
+Starting with release 0.4.0, serial-console-mcp is licensed under the
 [PolyForm Noncommercial License 1.0.0](LICENSE). Versions up to and including 0.3.3 were
 released under the MIT License and stay under it; nothing on this page changes the terms of a
 copy you already have.
